@@ -10,6 +10,9 @@ LICENSE=	modified-bsd
 
 VERSION=	1
 
+MAKE_FLAGS+=	CFLAGS=${CFLAGS:Q}
+MAKE_FLAGS+=	LDFLAGS=${LDFLAGS:Q}
+
 do-extract:
 	@${CP} -R -- ${FILESDIR} ${WRKSRC}
 
