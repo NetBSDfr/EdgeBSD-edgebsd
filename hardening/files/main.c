@@ -120,7 +120,7 @@ int main(void)
 	int ret;
 
 	/* check the library for hardening */
-	ret = (hardening() << 1);
+	ret = (lib() << 1);
 	printf("[!] Hi! I am an executable.\n");
 
 	/* check the executable for hardening */

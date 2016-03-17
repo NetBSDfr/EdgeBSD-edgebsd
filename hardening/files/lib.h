@@ -33,6 +33,6 @@
 # define EDGEBSD_HARDENING_LIB_H
 
 
-unsigned int hardening(void);
+unsigned int lib(void);
 
 #endif /* !EDGEBSD_HARDENING_LIB_H */

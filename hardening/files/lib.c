@@ -33,8 +33,8 @@
 #include "lib.h"
 
 
-/* hardening */
-unsigned int hardening(void)
+/* lib */
+unsigned int lib(void)
 {
 	unsigned int ret = 0;
 
