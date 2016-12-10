@@ -66,11 +66,11 @@ distclean: clean
 dist:
 	$(RM) -r -- $(OBJDIR)$(PACKAGE)-$(VERSION)
 	$(LN) -s -- "$$PWD" $(OBJDIR)$(PACKAGE)-$(VERSION)
-	@cd $(OBJDIR). && $(TAR) -czvf $(OBJDIR)$(PACKAGE)-$(VERSION).tar.gz -- \
+	@cd $(OBJDIR). && $(TAR) -czvf $(PACKAGE)-$(VERSION).tar.gz -- \
 		$(PACKAGE)-$(VERSION)/lib.c \
 		$(PACKAGE)-$(VERSION)/main.c \
 		$(PACKAGE)-$(VERSION)/Makefile \
-		$(PACKAGE)-$(VERSION)/README \
+		$(PACKAGE)-$(VERSION)/README.md \
 		$(PACKAGE)-$(VERSION)/lib.h \
 		$(PACKAGE)-$(VERSION)/project.conf
 	$(RM) -- $(OBJDIR)$(PACKAGE)-$(VERSION)
