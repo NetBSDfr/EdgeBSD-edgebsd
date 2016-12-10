@@ -45,7 +45,7 @@ $(OBJDIR)libHardening$(SOEXT): $(OBJDIR)libHardening$(SOEXT).0.0
 	$(LN) -s -- libHardening$(SOEXT).0.0 $(OBJDIR)libHardening$(SOEXT)
 
 hardening_OBJS = $(OBJDIR)main.o
-hardening_CFLAGS = $(CPPFLAGSF) $(CPPFLAGS) $(CFLAGSF) $(CFLAGS) -fPIE
+hardening_CFLAGS = $(CPPFLAGSF) $(CPPFLAGS) $(CFLAGSF) $(CFLAGS)
 hardening_LDFLAGS = $(LDFLAGSF) $(LDFLAGS) -L$(OBJDIR). -lHardening
 
 $(OBJDIR)hardening$(EXEEXT): $(hardening_OBJS) $(OBJDIR)libHardening$(SOEXT)
