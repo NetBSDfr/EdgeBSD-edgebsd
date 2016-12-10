@@ -8,7 +8,7 @@ HOMEPAGE=	https://www.edgebsd.org/
 COMMENT=	Hardening checks for pkgsrc
 LICENSE=	modified-bsd
 
-VERSION=	1
+VERSION=	2
 
 MAKE_FLAGS+=	PREFIX=${PREFIX:Q}
 MAKE_FLAGS+=	CFLAGS=${CFLAGS:Q}

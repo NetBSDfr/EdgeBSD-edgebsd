@@ -1,5 +1,5 @@
 PACKAGE	= Hardening
-VERSION	= 1
+VERSION	= 2
 TARGETS	= $(OBJDIR)libHardening.a $(OBJDIR)libHardening$(SOEXT).0.0 $(OBJDIR)libHardening$(SOEXT).0 $(OBJDIR)libHardening$(SOEXT) $(OBJDIR)hardening$(EXEEXT)
 OBJDIR	=
 PREFIX	= /usr/local
@@ -36,7 +36,7 @@ $(OBJDIR)libHardening.a: $(libHardening_OBJS)
 	$(RANLIB) $(OBJDIR)libHardening.a
 
 $(OBJDIR)libHardening$(SOEXT).0.0: $(libHardening_OBJS)
-	$(CCSHARED) -o $(OBJDIR)libHardening$(SOEXT).0.0 $(libHardening_OBJS) $(libHardening_LDFLAGS)
+	$(CCSHARED) -o $(OBJDIR)libHardening$(SOEXT).0.0 -Wl,-soname,libHardening$(SOEXT).0 $(libHardening_OBJS) $(libHardening_LDFLAGS)
 
 $(OBJDIR)libHardening$(SOEXT).0: $(OBJDIR)libHardening$(SOEXT).0.0
 	$(LN) -s -- libHardening$(SOEXT).0.0 $(OBJDIR)libHardening$(SOEXT).0
@@ -87,7 +87,19 @@ distcheck: dist
 	$(RM) -r -- $(PACKAGE)-$(VERSION)
 
 install: $(TARGETS)
+	$(MKDIR) $(DESTDIR)$(LIBDIR)
+	$(INSTALL) -m 0644 $(OBJDIR)libHardening.a $(DESTDIR)$(LIBDIR)/libHardening.a
+	$(INSTALL) -m 0755 $(OBJDIR)libHardening$(SOEXT).0.0 $(DESTDIR)$(LIBDIR)/libHardening$(SOEXT).0.0
+	$(LN) -s -- libHardening$(SOEXT).0.0 $(DESTDIR)$(LIBDIR)/libHardening$(SOEXT).0
+	$(LN) -s -- libHardening$(SOEXT).0.0 $(DESTDIR)$(LIBDIR)/libHardening$(SOEXT)
+	$(MKDIR) $(DESTDIR)$(BINDIR)
+	$(INSTALL) -m 0755 $(OBJDIR)hardening$(EXEEXT) $(DESTDIR)$(BINDIR)/hardening$(EXEEXT)
 
 uninstall:
+	$(RM) -- $(DESTDIR)$(LIBDIR)/libHardening.a
+	$(RM) -- $(DESTDIR)$(LIBDIR)/libHardening$(SOEXT).0.0
+	$(RM) -- $(DESTDIR)$(LIBDIR)/libHardening$(SOEXT).0
+	$(RM) -- $(DESTDIR)$(LIBDIR)/libHardening$(SOEXT)
+	$(RM) -- $(DESTDIR)$(BINDIR)/hardening$(EXEEXT)
 
 .PHONY: all clean distclean dist distcheck install uninstall
