@@ -1,5 +1,5 @@
 /* $Id$ */
-/* Copyright (c) 2016 Pierre Pronchery <khorben@edgebsd.org> */
+/* Copyright (c) 2016-2017 Pierre Pronchery <khorben@edgebsd.org> */
 /* This file is part of EdgeBSD Hardening */
 /* Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -58,9 +58,9 @@ static unsigned int _executable(void)
 #elif defined(__PIE__) && __PIE__ == 1
 	printf("[+] built with -fpie, perfect, complete ASLR\n");
 #elif defined(__PIC__) && __PIC__ == 2
-	printf("[+] built with -fPIC, enough for ASLR but not for joerg@\n");
+	printf("[+] built with -fPIC, good enough for full ASLR\n");
 #elif defined(__PIC__) && __PIC__ == 1
-	printf("[+] built with -fpic, enough for ASLR but not for joerg@\n");
+	printf("[+] built with -fpic, good enough for full ASLR\n");
 #else
 	printf("[-] NOT built with -fPIE or even -fPIC, no complete ASLR\n");
 	ret |= 1;
