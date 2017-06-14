@@ -1,6 +1,6 @@
 PACKAGE	= Hardening
 VERSION	= 3
-TARGETS	= $(OBJDIR)libHardening.a $(OBJDIR)libHardening$(SOEXT).0.0 $(OBJDIR)libHardening$(SOEXT).0 $(OBJDIR)libHardening$(SOEXT) $(OBJDIR)hardening$(EXEEXT)
+TARGETS	= $(OBJDIR)libHardening.a $(OBJDIR)libHardening$(SOEXT).0.0 $(OBJDIR)libHardening$(SOEXT).0 $(OBJDIR)libHardening$(SOEXT) $(OBJDIR)hardening$(EXEEXT) $(OBJDIR)true$(EXEEXT) $(OBJDIR)true-relro$(EXEEXT) $(OBJDIR)true-relro-now$(EXEEXT)
 OBJDIR	=
 PREFIX	= /usr/local
 DESTDIR	=
@@ -51,14 +51,44 @@ hardening_LDFLAGS = $(LDFLAGSF) $(LDFLAGS) -L$(OBJDIR). -lHardening
 $(OBJDIR)hardening$(EXEEXT): $(hardening_OBJS) $(OBJDIR)libHardening$(SOEXT)
 	$(CC) -o $(OBJDIR)hardening$(EXEEXT) $(hardening_OBJS) $(hardening_LDFLAGS)
 
+true_OBJS = $(OBJDIR)true.o
+true_CFLAGS = $(CPPFLAGSF) $(CPPFLAGS) $(CFLAGSF) $(CFLAGS)
+true_LDFLAGS = $(LDFLAGSF) $(LDFLAGS)
+
+$(OBJDIR)true$(EXEEXT): $(true_OBJS)
+	$(CC) -o $(OBJDIR)true$(EXEEXT) $(true_OBJS) $(true_LDFLAGS)
+
+true-relro_OBJS = $(OBJDIR)true-relro.o
+true-relro_CFLAGS = $(CPPFLAGSF) $(CPPFLAGS) $(CFLAGSF) $(CFLAGS)
+true-relro_LDFLAGS = $(LDFLAGSF) $(LDFLAGS) -Wl,-z,relro
+
+$(OBJDIR)true-relro$(EXEEXT): $(true-relro_OBJS)
+	$(CC) -o $(OBJDIR)true-relro$(EXEEXT) $(true-relro_OBJS) $(true-relro_LDFLAGS)
+
+true-relro-now_OBJS = $(OBJDIR)true-relro-now.o
+true-relro-now_CFLAGS = $(CPPFLAGSF) $(CPPFLAGS) $(CFLAGSF) $(CFLAGS)
+true-relro-now_LDFLAGS = $(LDFLAGSF) $(LDFLAGS) -Wl,-z,relro -Wl,-z,now
+
+$(OBJDIR)true-relro-now$(EXEEXT): $(true-relro-now_OBJS)
+	$(CC) -o $(OBJDIR)true-relro-now$(EXEEXT) $(true-relro-now_OBJS) $(true-relro-now_LDFLAGS)
+
 $(OBJDIR)lib.o: lib.c lib.h
 	$(CC) $(libHardening_CFLAGS) -o $(OBJDIR)lib.o -c lib.c
 
 $(OBJDIR)hardening.o: hardening.c lib.h
 	$(CC) $(hardening_CFLAGS) -o $(OBJDIR)hardening.o -c hardening.c
 
+$(OBJDIR)true.o: true.c
+	$(CC) $(true_CFLAGS) -o $(OBJDIR)true.o -c true.c
+
+$(OBJDIR)true-relro.o: true-relro.c
+	$(CC) $(true-relro_CFLAGS) -o $(OBJDIR)true-relro.o -c true-relro.c
+
+$(OBJDIR)true-relro-now.o: true-relro-now.c
+	$(CC) $(true-relro-now_CFLAGS) -o $(OBJDIR)true-relro-now.o -c true-relro-now.c
+
 clean:
-	$(RM) -- $(libHardening_OBJS) $(hardening_OBJS)
+	$(RM) -- $(libHardening_OBJS) $(hardening_OBJS) $(true_OBJS) $(true-relro_OBJS) $(true-relro-now_OBJS)
 
 distclean: clean
 	$(RM) -- $(TARGETS)
@@ -69,6 +99,9 @@ dist:
 	@cd $(OBJDIR). && $(TAR) -czvf $(PACKAGE)-$(VERSION).tar.gz -- \
 		$(PACKAGE)-$(VERSION)/lib.c \
 		$(PACKAGE)-$(VERSION)/hardening.c \
+		$(PACKAGE)-$(VERSION)/true.c \
+		$(PACKAGE)-$(VERSION)/true-relro.c \
+		$(PACKAGE)-$(VERSION)/true-relro-now.c \
 		$(PACKAGE)-$(VERSION)/Makefile \
 		$(PACKAGE)-$(VERSION)/README.md \
 		$(PACKAGE)-$(VERSION)/lib.h \
