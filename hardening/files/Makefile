@@ -1,5 +1,5 @@
 PACKAGE	= Hardening
-VERSION	= 2
+VERSION	= 3
 TARGETS	= $(OBJDIR)libHardening.a $(OBJDIR)libHardening$(SOEXT).0.0 $(OBJDIR)libHardening$(SOEXT).0 $(OBJDIR)libHardening$(SOEXT) $(OBJDIR)hardening$(EXEEXT)
 OBJDIR	=
 PREFIX	= /usr/local
@@ -44,7 +44,7 @@ $(OBJDIR)libHardening$(SOEXT).0: $(OBJDIR)libHardening$(SOEXT).0.0
 $(OBJDIR)libHardening$(SOEXT): $(OBJDIR)libHardening$(SOEXT).0.0
 	$(LN) -s -- libHardening$(SOEXT).0.0 $(OBJDIR)libHardening$(SOEXT)
 
-hardening_OBJS = $(OBJDIR)main.o
+hardening_OBJS = $(OBJDIR)hardening.o
 hardening_CFLAGS = $(CPPFLAGSF) $(CPPFLAGS) $(CFLAGSF) $(CFLAGS)
 hardening_LDFLAGS = $(LDFLAGSF) $(LDFLAGS) -L$(OBJDIR). -lHardening
 
@@ -54,8 +54,8 @@ $(OBJDIR)hardening$(EXEEXT): $(hardening_OBJS) $(OBJDIR)libHardening$(SOEXT)
 $(OBJDIR)lib.o: lib.c lib.h
 	$(CC) $(libHardening_CFLAGS) -o $(OBJDIR)lib.o -c lib.c
 
-$(OBJDIR)main.o: main.c lib.h
-	$(CC) $(hardening_CFLAGS) -o $(OBJDIR)main.o -c main.c
+$(OBJDIR)hardening.o: hardening.c lib.h
+	$(CC) $(hardening_CFLAGS) -o $(OBJDIR)hardening.o -c hardening.c
 
 clean:
 	$(RM) -- $(libHardening_OBJS) $(hardening_OBJS)
@@ -68,7 +68,7 @@ dist:
 	$(LN) -s -- "$$PWD" $(OBJDIR)$(PACKAGE)-$(VERSION)
 	@cd $(OBJDIR). && $(TAR) -czvf $(PACKAGE)-$(VERSION).tar.gz -- \
 		$(PACKAGE)-$(VERSION)/lib.c \
-		$(PACKAGE)-$(VERSION)/main.c \
+		$(PACKAGE)-$(VERSION)/hardening.c \
 		$(PACKAGE)-$(VERSION)/Makefile \
 		$(PACKAGE)-$(VERSION)/README.md \
 		$(PACKAGE)-$(VERSION)/lib.h \
