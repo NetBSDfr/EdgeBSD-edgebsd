@@ -48,7 +48,7 @@
 	<refsynopsisdiv>
 		<cmdsynopsis>
 			<command>&name;</command>
-			<arg choice="opt"><option>-p</option></arg>
+			<arg choice="opt"><option>-bknpqSsv</option></arg>
 			<arg choice="opt"><option>-P</option> <replaceable>path</replaceable></arg>
 		</cmdsynopsis>
 	</refsynopsisdiv>
@@ -63,9 +63,51 @@
 		<para>The following options are available:</para>
 		<variablelist>
 			<varlistentry>
+				<term><option>-b</option></term>
+				<listitem>
+					<para>Also update the bootloader.</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
+				<term><option>-k</option></term>
+				<listitem>
+					<para>Also update the kernel.</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
+				<term><option>-n</option></term>
+				<listitem>
+					<para>Download the sets but do not install them.</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
 				<term><option>-p</option></term>
 				<listitem>
 					<para>Also update packages.</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
+				<term><option>-q</option></term>
+				<listitem>
+					<para>Perform the operation silently, except for errors.</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
+				<term><option>-S</option></term>
+				<listitem>
+					<para>Do not verify signatures for the sets.</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
+				<term><option>-s</option></term>
+				<listitem>
+					<para>Verify signatures for the sets. This is the default.</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
+				<term><option>-v</option></term>
+				<listitem>
+					<para>Increase the verbosity level.</para>
 				</listitem>
 			</varlistentry>
 			<varlistentry>
