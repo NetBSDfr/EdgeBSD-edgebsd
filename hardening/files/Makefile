@@ -13,6 +13,7 @@ CFLAGS	= -g
 LDFLAGS	= 
 EXEEXT	=
 AR	= ar
+ARFLAGS	= -rc
 RANLIB	= ranlib
 CCSHARED= $(CC) -shared
 SOEXT	= .so
@@ -32,7 +33,7 @@ libHardening_CFLAGS = $(CPPFLAGSF) $(CPPFLAGS) $(CFLAGSF) $(CFLAGS) -fPIC
 libHardening_LDFLAGS = $(LDFLAGSF) $(LDFLAGS)
 
 $(OBJDIR)libHardening.a: $(libHardening_OBJS)
-	$(AR) -rc $(OBJDIR)libHardening.a $(libHardening_OBJS)
+	$(AR) $(ARFLAGS) $(OBJDIR)libHardening.a $(libHardening_OBJS)
 	$(RANLIB) $(OBJDIR)libHardening.a
 
 $(OBJDIR)libHardening$(SOEXT).0.0: $(libHardening_OBJS)
