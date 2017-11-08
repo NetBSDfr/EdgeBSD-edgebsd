@@ -1,2 +1,4 @@
 @comment $NetBSD$
+man/html8/edgebsd-update.html
+man/man8/edgebsd-update.8
 sbin/edgebsd-update
