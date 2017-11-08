@@ -4,6 +4,7 @@ COMMENT=	Packages for pkgsrc from EdgeBSD
 
 #SUBDIR+=	.git # to silence pkglint
 SUBDIR+=	hardening
+SUBDIR+=	update
 
 ${.CURDIR}/PKGDB:
 	${RM} -f ${.CURDIR}/PKGDB

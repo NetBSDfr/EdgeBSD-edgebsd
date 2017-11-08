@@ -1,0 +1,425 @@
+#!/bin/sh
+#Copyright (c) 2014-2017 Pierre Pronchery <khorben@edgebsd.org>
+#
+#This code is derived from software contributed to the EdgeBSD Project
+#by Pierre Pronchery <khorben@edgebsd.org>
+#
+#Redistribution and use in source and binary forms, with or without
+#modification, are permitted provided that the following conditions
+#are met:
+#1. Redistributions of source code must retain the above copyright
+#   notice, this list of conditions and the following disclaimer.
+#2. Redistributions in binary form must reproduce the above copyright
+#   notice, this list of conditions and the following disclaimer in the
+#   documentation and/or other materials provided with the distribution.
+#
+#THIS SOFTWARE IS PROVIDED BY THE EDGEBSD PROJECT AND CONTRIBUTORS
+#``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+#TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+#PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE FOUNDATION OR CONTRIBUTORS
+#BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+#CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+#SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+#INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+#CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+#ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+#POSSIBILITY OF SUCH DAMAGE.
+
+
+
+#variables
+BOOTLOADER=0
+DESTDIR="/"
+DEVNULL="/dev/null"
+EDGEBSD_ARCH=$(uname -m)
+EDGEBSD_KERNEL="GENERIC"
+EDGEBSD_MIRROR="ftp://ftp.edgebsd.org"
+EDGEBSD_PATH=
+EDGEBSD_RELEASE=$(uname -r)
+EDGEBSD_RELEASE="EdgeBSD-${EDGEBSD_RELEASE%.*}"
+ETCMTREE="/etc/mtree"
+KERNEL=0
+NOOP=0
+PROGNAME="edgebsd-update"
+SETS=
+UPDATE_ETC=0
+USRMDECBOOT="/usr/mdec/boot"
+VERBOSE=1
+VERIFY=1
+VERIFY_USERID="root@edgebsd.org"
+#executables
+CP="/bin/cp -a"
+DEBUG="_debug"
+FTP="/usr/bin/ftp -V"
+GZIP="/usr/bin/gzip -9"
+INSTALL="/usr/bin/install"
+MKDIR="/bin/mkdir -p"
+MKTEMP="/usr/bin/mktemp /tmp/edgebsd-update-XXXXXX"
+NETPGP="/usr/bin/netpgp"
+NETPGPKEYS="/usr/bin/netpgpkeys"
+PAXCTL="/usr/sbin/paxctl"
+POSTINSTALL="/usr/sbin/postinstall"
+PROGRESS="/usr/bin/progress"
+RM="/bin/rm -f"
+TAR="/rescue/tar"
+
+
+#functions
+#debug
+_debug()
+{
+	[ $VERBOSE -ge 3 ] && echo "$@" 1>&2
+	"$@"
+}
+
+
+#download
+_download()
+{
+	file="$1"
+
+	$DEBUG $FTP "$EDGEBSD_PATH/$file"
+	res=$?
+	[ $res -eq 0 ] || $RM -- "$file"
+	return $res
+}
+
+
+#error
+_error()
+{
+	echo "$PROGNAME: $@" 1>&2
+	return 2
+}
+
+
+#import_gpg_key
+_import_gpg_key()
+{
+	ret=0
+
+	tmpfile=$($MKTEMP)
+	[ $? -eq 0 ]						|| return 2
+	_import_gpg_key_echo > "$tmpfile" &&
+	$NETPGPKEYS --import-key "$tmpfile" > "$DEVNULL"	|| ret=2
+	$RM -- "$tmpfile"
+	return $ret
+}
+
+
+#import_gpg_key_echo
+_import_gpg_key_echo()
+{
+	echo "-----BEGIN PGP PUBLIC KEY BLOCK-----
+Version: GnuPG v1
+
+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
+mEH+2rR/ZC0mmQ==
+=dmei
+-----END PGP PUBLIC KEY BLOCK-----"
+}
+
+
+#info
+_info()
+{
+	[ $VERBOSE -ge 1 ] && echo "$@" 1>&2
+}
+
+
+#usage
+_usage()
+{
+	echo "Usage: $PROGNAME [-bknqSsv][-O variable=value...][-P path]" 1>&2
+	echo "  -P	Full path to the sets"
+	echo "  -b	Update the bootloader"
+	echo "  -k	Update the kernel"
+	echo "  -n	Download the sets but do not install them"
+	echo "  -q	Enable quiet mode"
+	echo "  -S	Do not verify signatures"
+	echo "  -s	Verify signatures (default)"
+	echo "  -v	Be more verbose"
+	return 1
+}
+
+
+#verify
+_verify()
+{
+	file="$1"
+
+	$NETPGP --verify --userid "$VERIFY_USERID" "${file}.sig"
+}
+
+
+#main
+#parse arguments
+while getopts "O:P:bknqSsv" name; do
+	case "$name" in
+		O)
+			export "${OPTARG%%=*}"="${OPTARG#*=}"
+			;;
+		P)
+			EDGEBSD_PATH="$OPTARG"
+			;;
+		b)
+			BOOTLOADER=1
+			;;
+		k)
+			KERNEL=1
+			;;
+		n)
+			NOOP=1
+			;;
+		q)
+			FTP="/usr/bin/ftp -V"
+			VERBOSE=0
+			;;
+		S)
+			VERIFY=0
+			;;
+		s)
+			VERIFY=1
+			;;
+		v)
+			VERBOSE=$((VERBOSE + 1))
+			[ $VERBOSE -ge 2 ] && FTP="/usr/bin/ftp"
+			;;
+		*)
+			_usage
+			exit $?
+			;;
+	esac
+done
+shift $((OPTIND - 1))
+if [ $# -ne 0 ]; then
+	_usage
+	exit $?
+fi
+
+if [ $VERIFY -ne 0 ]; then
+	#import the GPG key
+	_info "Importing the GPG key..."
+	#FIXME does not work
+	_import_gpg_key						|| return 2
+fi
+
+#detect the sets to update
+if [ -z "$SETS" ]; then
+	for i in "$DESTDIR$ETCMTREE/set."*; do
+		set="${i#$DESTDIR$ETCMTREE/set.}"
+		[ -n "$set" ] && SETS="$SETS $set"
+	done
+fi
+
+if [ -z "$EDGEBSD_PATH" ]; then
+	EDGEBSD_PATH="$EDGEBSD_MIRROR/pub/EdgeBSD/$EDGEBSD_RELEASE/$EDGEBSD_ARCH/binary/sets"
+else
+	EDGEBSD_MIRROR="/nonexistent"
+fi
+
+#download the kernel
+if [ $KERNEL -ne 0 -a -n "${EDGEBSD_MIRROR##/*}" ]; then
+	if [ ! -f "kern-${EDGEBSD_KERNEL}.tgz" ]; then
+		_info "Downloading kernel ${EDGEBSD_KERNEL}..."
+		_download "kern-${EDGEBSD_KERNEL}.tgz"
+		if [ $? -ne 0 ]; then
+			_error "$EDGEBSD_KERNEL: Could not download the kernel"
+			exit $?
+		fi
+	fi
+	if [ $VERIFY -ne 0 -a ! -f "kern-${EDGEBSD_KERNEL}.tgz.sig" ]; then
+		_info "Downloading signature for kernel ${EDGEBSD_KERNEL}..."
+		_download "kern-${EDGEBSD_KERNEL}.tgz.sig"
+		if [ $? -ne 0 ]; then
+			_error "$EDGEBSD_KERNEL: Could not download the kernel signature"
+			exit $?
+		fi
+	fi
+fi
+
+#download the relevant sets
+res=0
+for set in $SETS; do
+	[ -z "${EDGEBSD_MIRROR##/*}" ] && continue
+	[ -f "${set}.tgz" ] && continue
+	_info "Downloading set ${set}..."
+	_download "${set}.tgz"
+	res=$?
+	[ $res -eq 0 ] || break
+	[ $VERIFY -eq 0 ] && continue
+	_info "Downloading signature for set ${set}..."
+	_download "${set}.tgz.sig"
+	res=$?
+	[ $res -eq 0 ] || break
+done
+if [ $res -ne 0 ]; then
+	_error "$set: Could not download the set"
+	[ -f "${set}.tgz" ] && $RM -- "${set}.tgz"
+	exit $?
+fi
+
+[ $NOOP -ne 0 ] && exit 0
+
+#install the kernel
+if [ $KERNEL -ne 0 ]; then
+	file="kern-${EDGEBSD_KERNEL}.tgz"
+	[ -z "${EDGEBSD_MIRROR##/*}" ] && file="$EDGEBSD_PATH/$file"
+	if [ $VERIFY -ne 0 ]; then
+		_info "Verifying kernel ${EDGEBSD_KERNEL}..."
+		_verify "$file"
+		if [ $? -ne 0 ]; then
+			_error "$EDGEBSD_KERNEL: Could not verify the kernel"
+			exit $?
+		fi
+	fi
+	#backup the current kernel
+	if [ -f "$DESTDIR/netbsd.gz" ]; then
+		$CP -- "$DESTDIR/netbsd.gz" "$DESTDIR/onetbsd.gz"
+		if [ $? -ne 0 ]; then
+			_error "$EDGEBSD_KERNEL: Could not backup the kernel"
+			exit $?
+		fi
+	fi
+	_info "Installing kernel ${EDGEBSD_KERNEL}..."
+	$DEBUG $PROGRESS -f "$file" $TAR -xzpf - -C "$DESTDIR"
+	if [ $? -ne 0 ]; then
+		_error "$EDGEBSD_KERNEL: Could not install the kernel"
+		exit $?
+	fi
+	_info "Compressing kernel ${EDGEBSD_KERNEL}..."
+	$DEBUG $GZIP -f -- "$DESTDIR/netbsd"
+	if [ $? -ne 0 ]; then
+		_error "$EDGEBSD_KERNEL: Could not compress the kernel"
+		exit $?
+	fi
+fi
+
+#install the relevant sets
+$MKDIR -- "$DESTDIR"
+for set in $SETS; do
+	if [ "$set" = "etc" ]; then
+		UPDATE_ETC=1
+		#skip the "etc" set if already installed
+		[ -f "$DESTDIR$ETCMTREE/set.$set" ] && continue
+	fi
+	file="${set}.tgz"
+	[ -z "${EDGEBSD_MIRROR##/*}" ] && file="$EDGEBSD_PATH/$file"
+	if [ $VERIFY -ne 0 ]; then
+		_info "Verifying set ${set}..."
+		_verify "$file"
+		res=$?
+		[ $res -eq 0 ] || break
+	fi
+	_info "Installing set ${set}..."
+	$DEBUG $PROGRESS -f "$file" $TAR -xzpf - -C "$DESTDIR"
+	res=$?
+	[ $res -eq 0 ] || break
+done
+if [ $res -ne 0 ]; then
+	_error "$set: Could not install the set"
+	exit $?
+fi
+
+#update the configuration
+if [ $UPDATE_ETC -eq 1 ]; then
+	set="etc"
+	file="${set}.tgz"
+	[ -z "${EDGEBSD_MIRROR##/*}" ] && file="$EDGEBSD_PATH/$file"
+	if [ $VERIFY -ne 0 ]; then
+		_info "Verifying set ${set}..."
+		_verify "$file"
+		res=$?
+		[ $res -eq 0 ] || break
+	fi
+	_info "Configuring the system..."
+	$DEBUG $POSTINSTALL -s "$file" -d "$DESTDIR" fix > "$DEVNULL"
+	res=$?
+	#XXX fix /usr/libexec/cc1*
+	if [ $res -eq 0 -a -x "$PAXCTL" ]; then
+		for i in cc1 cc1obj cc1plus; do
+			if [ -x "$DESTDIR/usr/libexec/$i" ]; then
+				$PAXCTL +m "$DESTDIR/usr/libexec/$i"
+				res=$?
+			fi
+			[ $res -eq 0 ] || break
+		done
+	fi
+fi
+if [ $res -ne 0 ]; then
+	_error "Could not update the configuration"
+	exit $?
+fi
+
+#update the bootloader
+#XXX is this always the case?
+if [ $BOOTLOADER -ne 0 -a -f "$DESTDIR/boot" -a -f "$DESTDIR$USRMDECBOOT" ]; then
+	_info "Updating the bootloader..."
+	res=0
+	$INSTALL -m 0444 "$DESTDIR$USRMDECBOOT" "$DESTDIR/boot"
+	res=$?
+	#FIXME also use installboot(8) when appropriate
+	if [ $res -ne 0 ]; then
+		_error "Could not update the bootloader"
+		exit $?
+	fi
+fi
+
+#clean the sets
+for set in $SETS; do
+	[ -z "${EDGEBSD_MIRROR##/*}" ] && continue
+	_info "Removing downloaded set ${set}..."
+	[ $VERIFY -ne 0 ] && $RM -- "${set}.tgz.sig"
+	$RM -- "${set}.tgz"
+done
+if [ $KERNEL -ne 0 -a -n "${EDGEBSD_MIRROR##/*}" ]; then
+	[ $VERIFY -ne 0 ] && $RM -- "kern-${EDGEBSD_KERNEL}.tgz.sig"
+	$RM -- "kern-${EDGEBSD_KERNEL}.tgz"
+fi
+
+_info "Update successful."
