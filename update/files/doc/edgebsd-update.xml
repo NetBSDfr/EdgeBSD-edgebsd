@@ -127,6 +127,34 @@
 		<title>See also</title>
 		<para>
 			<citerefentry>
+				<refentrytitle>boot</refentrytitle>
+				<manvolnum>8</manvolnum>
+			</citerefentry>,
+			<citerefentry>
+				<refentrytitle>ftp</refentrytitle>
+				<manvolnum>1</manvolnum>
+			</citerefentry>,
+			<citerefentry>
+				<refentrytitle>install</refentrytitle>
+				<manvolnum>1</manvolnum>
+			</citerefentry>,
+			<citerefentry>
+				<refentrytitle>mount</refentrytitle>
+				<manvolnum>8</manvolnum>
+			</citerefentry>,
+			<citerefentry>
+				<refentrytitle>netpgp</refentrytitle>
+				<manvolnum>1</manvolnum>
+			</citerefentry>,
+			<citerefentry>
+				<refentrytitle>pkgin</refentrytitle>
+				<manvolnum>1</manvolnum>
+			</citerefentry>,
+			<citerefentry>
+				<refentrytitle>postinstall</refentrytitle>
+				<manvolnum>8</manvolnum>
+			</citerefentry>,
+			<citerefentry>
 				<refentrytitle>progress</refentrytitle>
 				<manvolnum>1</manvolnum>
 			</citerefentry>,
