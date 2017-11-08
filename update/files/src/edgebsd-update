@@ -317,7 +317,7 @@ _info()
 #usage
 _usage()
 {
-	echo "Usage: $PROGNAME [-bknpqSsv][-O variable=value...][-P path]" 1>&2
+	echo "Usage: $PROGNAME [-bknpqSsv][-P path]" 1>&2
 	echo "  -P	Full path to the sets"
 	echo "  -b	Update the bootloader"
 	echo "  -k	Update the kernel"
