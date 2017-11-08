@@ -1,6 +1,6 @@
 PACKAGE	= edgebsd-update
 VERSION	= 5
-SUBDIRS	= src tests
+SUBDIRS	= doc src tests
 RM	= rm -f
 LN	= ln -f
 TAR	= tar
@@ -32,6 +32,12 @@ dist:
 	$(RM) -r -- $(OBJDIR)$(PACKAGE)-$(VERSION)
 	$(LN) -s -- "$$PWD" $(OBJDIR)$(PACKAGE)-$(VERSION)
 	@cd $(OBJDIR). && $(TAR) -czvf $(PACKAGE)-$(VERSION).tar.gz -- \
+		$(PACKAGE)-$(VERSION)/doc/Makefile \
+		$(PACKAGE)-$(VERSION)/doc/docbook.sh \
+		$(PACKAGE)-$(VERSION)/doc/edgebsd-update.css.xml \
+		$(PACKAGE)-$(VERSION)/doc/edgebsd-update.xml \
+		$(PACKAGE)-$(VERSION)/doc/manual.css.xml \
+		$(PACKAGE)-$(VERSION)/doc/project.conf \
 		$(PACKAGE)-$(VERSION)/src/Makefile \
 		$(PACKAGE)-$(VERSION)/src/edgebsd-update \
 		$(PACKAGE)-$(VERSION)/src/project.conf \
@@ -41,6 +47,7 @@ dist:
 		$(PACKAGE)-$(VERSION)/tests/project.conf \
 		$(PACKAGE)-$(VERSION)/Makefile \
 		$(PACKAGE)-$(VERSION)/README.md \
+		$(PACKAGE)-$(VERSION)/config.sh \
 		$(PACKAGE)-$(VERSION)/project.conf
 	$(RM) -- $(OBJDIR)$(PACKAGE)-$(VERSION)
 
