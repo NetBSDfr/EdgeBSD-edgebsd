@@ -65,6 +65,32 @@ TAR="/rescue/tar"
 
 
 #functions
+#architecture-specific
+_arch_amd64_update_bootloader()
+{
+	_arch_i386_update_bootloader
+}
+
+_arch_i386_update_bootloader()
+{
+	#XXX is this always the case?
+	if [ -f "$DESTDIR/boot" -a -f "$DESTDIR$USRMDECBOOT" ]; then
+		$INSTALL -m 0444 "$DESTDIR$USRMDECBOOT" "$DESTDIR/boot"
+		#FIXME also use installboot(8) when appropriate
+	fi
+}
+
+_arch_sparc_update_bootloader()
+{
+	_arch_i386_update_bootloader
+}
+
+_arch_sparc64_update_bootloader()
+{
+	_arch_sparc_update_bootloader
+}
+
+
 #debug
 _debug()
 {
@@ -397,13 +423,17 @@ if [ $res -ne 0 ]; then
 fi
 
 #update the bootloader
-#XXX is this always the case?
-if [ $BOOTLOADER -ne 0 -a -f "$DESTDIR/boot" -a -f "$DESTDIR$USRMDECBOOT" ]; then
+if [ $BOOTLOADER -ne 0 ]; then
 	_info "Updating the bootloader..."
-	res=0
-	$INSTALL -m 0444 "$DESTDIR$USRMDECBOOT" "$DESTDIR/boot"
-	res=$?
-	#FIXME also use installboot(8) when appropriate
+	case "$EDGEBSD_ARCH" in
+		amd64|i386|sparc|sparc64)
+			"_arch_${EDGEBSD_ARCH}_update_bootloader"
+			res=$?
+			;;
+		*)
+			res=2
+			;;
+	esac
 	if [ $res -ne 0 ]; then
 		_error "Could not update the bootloader"
 		exit $?
