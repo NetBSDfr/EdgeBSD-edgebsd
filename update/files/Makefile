@@ -1,30 +1,42 @@
 PACKAGE	= edgebsd-update
-VERSION	= 1
-OBJDIR	=
-PREFIX	= /usr/local
-DESTDIR	=
-MKDIR	= mkdir -m 0755 -p
-INSTALL	= install
-RM	= rm -f
+VERSION	= 2
+SUBDIRS	= src
 RM	= rm -f
 LN	= ln -f
 TAR	= tar
 MKDIR	= mkdir -m 0755 -p
 
 
-all:
+all: subdirs
+
+subdirs:
+	@for i in $(SUBDIRS); do (cd "$$i" && \
+		if [ -n "$(OBJDIR)" ]; then \
+		([ -d "$(OBJDIR)$$i" ] || $(MKDIR) -- "$(OBJDIR)$$i") && \
+		$(MAKE) OBJDIR="$(OBJDIR)$$i/"; \
+		else $(MAKE); fi) || exit; done
 
 clean:
+	@for i in $(SUBDIRS); do (cd "$$i" && \
+		if [ -n "$(OBJDIR)" ]; then \
+		$(MAKE) OBJDIR="$(OBJDIR)$$i/" clean; \
+		else $(MAKE) clean; fi) || exit; done
 
-distclean: clean
+distclean:
+	@for i in $(SUBDIRS); do (cd "$$i" && \
+		if [ -n "$(OBJDIR)" ]; then \
+		$(MAKE) OBJDIR="$(OBJDIR)$$i/" distclean; \
+		else $(MAKE) distclean; fi) || exit; done
 
 dist:
 	$(RM) -r -- $(OBJDIR)$(PACKAGE)-$(VERSION)
 	$(LN) -s -- "$$PWD" $(OBJDIR)$(PACKAGE)-$(VERSION)
 	@cd $(OBJDIR). && $(TAR) -czvf $(PACKAGE)-$(VERSION).tar.gz -- \
+		$(PACKAGE)-$(VERSION)/src/Makefile \
+		$(PACKAGE)-$(VERSION)/src/edgebsd-update \
+		$(PACKAGE)-$(VERSION)/src/project.conf \
 		$(PACKAGE)-$(VERSION)/Makefile \
 		$(PACKAGE)-$(VERSION)/README.md \
-		$(PACKAGE)-$(VERSION)/edgebsd-update \
 		$(PACKAGE)-$(VERSION)/project.conf
 	$(RM) -- $(OBJDIR)$(PACKAGE)-$(VERSION)
 
@@ -40,10 +52,15 @@ distcheck: dist
 	$(RM) -r -- $(PACKAGE)-$(VERSION)
 
 install:
-	$(MKDIR) $(DESTDIR)$(PREFIX)/sbin
-	$(INSTALL) -m 0755 edgebsd-update $(DESTDIR)$(PREFIX)/sbin/edgebsd-update
+	@for i in $(SUBDIRS); do (cd "$$i" && \
+		if [ -n "$(OBJDIR)" ]; then \
+		$(MAKE) OBJDIR="$(OBJDIR)$$i/" install; \
+		else $(MAKE) install; fi) || exit; done
 
 uninstall:
-	$(RM) -- $(DESTDIR)$(PREFIX)/sbin/edgebsd-update
+	@for i in $(SUBDIRS); do (cd "$$i" && \
+		if [ -n "$(OBJDIR)" ]; then \
+		$(MAKE) OBJDIR="$(OBJDIR)$$i/" uninstall; \
+		else $(MAKE) uninstall; fi) || exit; done
 
-.PHONY: all clean distclean dist distcheck install uninstall
+.PHONY: all subdirs clean distclean dist distcheck install uninstall
