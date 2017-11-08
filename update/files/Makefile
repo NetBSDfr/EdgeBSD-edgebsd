@@ -1,6 +1,6 @@
 PACKAGE	= edgebsd-update
 VERSION	= 2
-SUBDIRS	= src
+SUBDIRS	= src tests
 RM	= rm -f
 LN	= ln -f
 TAR	= tar
@@ -35,6 +35,9 @@ dist:
 		$(PACKAGE)-$(VERSION)/src/Makefile \
 		$(PACKAGE)-$(VERSION)/src/edgebsd-update \
 		$(PACKAGE)-$(VERSION)/src/project.conf \
+		$(PACKAGE)-$(VERSION)/tests/Makefile \
+		$(PACKAGE)-$(VERSION)/tests/shlint.sh \
+		$(PACKAGE)-$(VERSION)/tests/project.conf \
 		$(PACKAGE)-$(VERSION)/Makefile \
 		$(PACKAGE)-$(VERSION)/README.md \
 		$(PACKAGE)-$(VERSION)/project.conf
