@@ -1,5 +1,5 @@
 PACKAGE	= edgebsd-update
-VERSION	= 4
+VERSION	= 5
 SUBDIRS	= src tests
 RM	= rm -f
 LN	= ln -f
