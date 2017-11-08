@@ -40,6 +40,7 @@ EDGEBSD_RELEASE="EdgeBSD-${EDGEBSD_RELEASE%.*}"
 ETCMTREE="/etc/mtree"
 KERNEL=0
 NOOP=0
+PACKAGES=0
 PROGNAME="edgebsd-update"
 SETS=
 [ -n "$TMPDIR" ] || TMPDIR="/tmp"
@@ -60,6 +61,7 @@ MOUNT="/sbin/mount"
 NETPGP="/usr/bin/netpgp"
 NETPGPKEYS="/usr/bin/netpgpkeys"
 PAXCTL="/usr/sbin/paxctl"
+PKGIN="/usr/pkg/bin/pkgin"
 POSTINSTALL="/usr/sbin/postinstall"
 PROGRESS="/usr/bin/progress"
 RM="/bin/rm -f"
@@ -315,11 +317,12 @@ _info()
 #usage
 _usage()
 {
-	echo "Usage: $PROGNAME [-bknqSsv][-O variable=value...][-P path]" 1>&2
+	echo "Usage: $PROGNAME [-bknpqSsv][-O variable=value...][-P path]" 1>&2
 	echo "  -P	Full path to the sets"
 	echo "  -b	Update the bootloader"
 	echo "  -k	Update the kernel"
 	echo "  -n	Download the sets but do not install them"
+	echo "  -p	Update the packages"
 	echo "  -q	Enable quiet mode"
 	echo "  -S	Do not verify signatures"
 	echo "  -s	Verify signatures (default)"
@@ -339,7 +342,7 @@ _verify()
 
 #main
 #parse arguments
-while getopts "O:P:bknqSsv" name; do
+while getopts "O:P:bknpqSsv" name; do
 	case "$name" in
 		O)
 			export "${OPTARG%%=*}"="${OPTARG#*=}"
@@ -355,6 +358,9 @@ while getopts "O:P:bknqSsv" name; do
 			;;
 		n)
 			NOOP=1
+			;;
+		p)
+			PACKAGES=1
 			;;
 		q)
 			FTP="/usr/bin/ftp -V"
@@ -514,6 +520,20 @@ fi
 if [ $res -ne 0 ]; then
 	_error "Could not update the configuration"
 	exit $?
+fi
+
+#update the packages
+if [ $PACKAGES -ne 0 ]; then
+	_info "Updating the packages..."
+	if [ -n "$DESTDIR" ]; then
+		$PKGIN -y -c "$DESTDIR" full-upgrade
+	else
+		$PKGIN -y full-upgrade
+	fi
+	if [ $? -ne 0 ]; then
+		_error "$set: Could not update the packages"
+		exit $?
+	fi
 fi
 
 #update the bootloader
