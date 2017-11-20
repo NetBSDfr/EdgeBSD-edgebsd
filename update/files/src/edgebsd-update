@@ -39,6 +39,7 @@ EDGEBSD_RELEASE=$(uname -r)
 EDGEBSD_RELEASE="EdgeBSD-${EDGEBSD_RELEASE%.*}"
 ETCMTREE="/etc/mtree"
 KERNEL=0
+MODULES=0
 NOOP=0
 PACKAGES=0
 PROGNAME="edgebsd-update"
@@ -317,10 +318,11 @@ _info()
 #usage
 _usage()
 {
-	echo "Usage: $PROGNAME [-bknpqSsv][-P path]" 1>&2
+	echo "Usage: $PROGNAME [-bkmnpqSsv][-P path]" 1>&2
 	echo "  -P	Full path to the sets"
 	echo "  -b	Update the bootloader"
 	echo "  -k	Update the kernel"
+	echo "  -m	Update the kernel modules"
 	echo "  -n	Download the sets but do not install them"
 	echo "  -p	Update the packages"
 	echo "  -q	Enable quiet mode"
@@ -342,7 +344,7 @@ _verify()
 
 #main
 #parse arguments
-while getopts "O:P:bknpqSsv" name; do
+while getopts "O:P:bkmnpqSsv" name; do
 	case "$name" in
 		O)
 			export "${OPTARG%%=*}"="${OPTARG#*=}"
@@ -355,6 +357,9 @@ while getopts "O:P:bknpqSsv" name; do
 			;;
 		k)
 			KERNEL=1
+			;;
+		m)
+			MODULES=1
 			;;
 		n)
 			NOOP=1
@@ -401,6 +406,14 @@ if [ -z "$SETS" ]; then
 		set="${i#$DESTDIR$ETCMTREE/set.}"
 		[ -n "$set" ] && SETS="$SETS $set"
 	done
+fi
+
+if [ $MODULES -ne 0 ]; then
+	has_stand=0
+	for i in $SETS; do
+		[ "$i" = "stand" ] && has_stand=1
+	done
+	[ $has_stand -eq 0 ] && SETS="$SETS stand"
 fi
 
 if [ -z "$EDGEBSD_PATH" ]; then
