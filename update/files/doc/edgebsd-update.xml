@@ -49,6 +49,7 @@
 		<cmdsynopsis>
 			<command>&name;</command>
 			<arg choice="opt"><option>-bknpqSsv</option></arg>
+			<arg choice="opt"><option>-M</option> <replaceable>mirror</replaceable></arg>
 			<arg choice="opt"><option>-P</option> <replaceable>path</replaceable></arg>
 		</cmdsynopsis>
 	</refsynopsisdiv>
@@ -108,6 +109,12 @@
 				<term><option>-v</option></term>
 				<listitem>
 					<para>Increase the verbosity level.</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
+				<term><option>-M</option></term>
+				<listitem>
+					<para>Specify the mirror to use when downloading the sets.</para>
 				</listitem>
 			</varlistentry>
 			<varlistentry>
