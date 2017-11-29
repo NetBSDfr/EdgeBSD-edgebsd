@@ -127,8 +127,9 @@
 	</refsect1>
 	<refsect1 id="bugs">
 		<title>Bugs</title>
-		<para>Issues can be reported at <ulink
-				url="https://lists.edgebsd.org/#edgebsd-developers"/>.</para>
+		<para>Issues can be reported on the "edgebsd-developers" mailing-list for the
+										EdgeBSD Project, as documented at <ulink
+																		url="https://lists.edgebsd.org/#edgebsd-developers"/>.</para>
 	</refsect1>
 	<refsect1 id="see_also">
 		<title>See also</title>
