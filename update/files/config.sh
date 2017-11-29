@@ -1,5 +1,5 @@
 PACKAGE="edgebsd-update"
-VERSION="6"
+VERSION="7"
 
 PREFIX="/usr/local"
 LIBDIR="${PREFIX}/lib"
