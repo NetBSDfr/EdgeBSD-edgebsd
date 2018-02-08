@@ -1,5 +1,5 @@
 PACKAGE	= edgebsd-update
-VERSION	= 7
+VERSION	= 8
 SUBDIRS	= doc src tests
 RM	= rm -f
 LN	= ln -f
