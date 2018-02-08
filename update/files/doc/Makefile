@@ -24,7 +24,7 @@ clean:
 distclean: clean
 	$(RM) -- $(TARGETS)
 
-install: $(TARGETS)
+install: all
 	./docbook.sh -P "$(DESTDIR)$(PREFIX)" -i -- "$(OBJDIR)edgebsd-update.8"
 	./docbook.sh -P "$(DESTDIR)$(PREFIX)" -i -- "$(OBJDIR)edgebsd-update.html"
 

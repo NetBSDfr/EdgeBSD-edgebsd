@@ -12,7 +12,7 @@ clean:
 
 distclean: clean
 
-install:
+install: all
 	$(MKDIR) $(DESTDIR)$(PREFIX)/sbin
 	$(INSTALL) -m 0755 edgebsd-update $(DESTDIR)$(PREFIX)/sbin/edgebsd-update
 
