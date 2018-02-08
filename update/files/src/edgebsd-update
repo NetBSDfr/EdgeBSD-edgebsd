@@ -318,9 +318,11 @@ _info()
 #usage
 _usage()
 {
-	echo "Usage: $PROGNAME [-bkmnpqSsv][-M mirror][-P path]" 1>&2
+	echo "Usage: $PROGNAME [-BbKkmnpqSsv][-M mirror][-P path]" 1>&2
 	echo "  -P	Full path to the sets"
+	echo "  -B	Do not update the bootloader"
 	echo "  -b	Update the bootloader"
+	echo "  -K	Do not update the kernel"
 	echo "  -k	Update the kernel"
 	echo "  -M	Specify a different mirror when downloading"
 	echo "  -m	Update the kernel modules"
@@ -345,7 +347,7 @@ _verify()
 
 #main
 #parse arguments
-while getopts "O:M:P:bkmnpqSsv" name; do
+while getopts "O:M:P:BbKkmnpqSsv" name; do
 	case "$name" in
 		O)
 			export "${OPTARG%%=*}"="${OPTARG#*=}"
@@ -353,8 +355,14 @@ while getopts "O:M:P:bkmnpqSsv" name; do
 		P)
 			EDGEBSD_PATH="$OPTARG"
 			;;
+		B)
+			BOOTLOADER=0
+			;;
 		b)
 			BOOTLOADER=1
+			;;
+		K)
+			KERNEL=0
 			;;
 		k)
 			KERNEL=1
