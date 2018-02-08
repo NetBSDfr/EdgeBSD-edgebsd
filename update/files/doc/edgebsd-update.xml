@@ -138,6 +138,15 @@
 			</varlistentry>
 		</variablelist>
 	</refsect1>
+	<refsect1 id="examples">
+		<title>Examples</title>
+		<para>To update the current system from the official repository, for the
+			version installed:</para>
+		<screen># &name;</screen>
+		<para>To update the current system from local sets, without signatures
+			generated or verifying them:</para>
+		<screen># &name; -S -P obj-amd64/releasedir/amd64/binary/sets</screen>
+	</refsect1>
 	<refsect1 id="bugs">
 		<title>Bugs</title>
 		<para>Issues can be reported on the "edgebsd-developers" mailing-list for the
