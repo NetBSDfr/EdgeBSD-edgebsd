@@ -48,7 +48,7 @@
 	<refsynopsisdiv>
 		<cmdsynopsis>
 			<command>&name;</command>
-			<arg choice="opt"><option>-bknpqSsv</option></arg>
+			<arg choice="opt"><option>-BbKknpqSsv</option></arg>
 			<arg choice="opt"><option>-M</option> <replaceable>mirror</replaceable></arg>
 			<arg choice="opt"><option>-P</option> <replaceable>path</replaceable></arg>
 		</cmdsynopsis>
@@ -64,9 +64,21 @@
 		<para>The following options are available:</para>
 		<variablelist>
 			<varlistentry>
+				<term><option>-B</option></term>
+				<listitem>
+					<para>Do not update the bootloader.</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
 				<term><option>-b</option></term>
 				<listitem>
 					<para>Also update the bootloader.</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
+				<term><option>-K</option></term>
+				<listitem>
+					<para>Do not update the kernel.</para>
 				</listitem>
 			</varlistentry>
 			<varlistentry>
