@@ -50,6 +50,7 @@
 		<cmdsynopsis>
 			<command>&name;</command>
 			<arg choice="opt"><option>-BbKknpqSsv</option></arg>
+			<arg choice="opt"><option>-D</option> <replaceable>destdir</replaceable></arg>
 			<arg choice="opt"><option>-M</option> <replaceable>mirror</replaceable></arg>
 			<arg choice="opt"><option>-P</option> <replaceable>path</replaceable></arg>
 		</cmdsynopsis>
@@ -74,6 +75,12 @@
 				<term><option>-b</option></term>
 				<listitem>
 					<para>Also update the bootloader.</para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
+				<term><option>-D</option></term>
+				<listitem>
+					<para>Update EdgeBSD in a different directory.</para>
 				</listitem>
 			</varlistentry>
 			<varlistentry>
