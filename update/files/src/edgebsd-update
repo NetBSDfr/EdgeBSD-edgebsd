@@ -320,7 +320,6 @@ _info()
 _usage()
 {
 	echo "Usage: $PROGNAME [-BbKkmnpqSsv][-M mirror][-P path]" 1>&2
-	echo "  -P	Full path to the sets"
 	echo "  -B	Do not update the bootloader"
 	echo "  -b	Update the bootloader"
 	echo "  -K	Do not update the kernel"
@@ -328,6 +327,7 @@ _usage()
 	echo "  -M	Specify a different mirror when downloading"
 	echo "  -m	Update the kernel modules"
 	echo "  -n	Download the sets but do not install them"
+	echo "  -P	Full path to the sets"
 	echo "  -p	Update the packages"
 	echo "  -q	Enable quiet mode"
 	echo "  -S	Do not verify signatures"
