@@ -319,9 +319,10 @@ _info()
 #usage
 _usage()
 {
-	echo "Usage: $PROGNAME [-BbKkmnpqSsv][-M mirror][-P path]" 1>&2
+	echo "Usage: $PROGNAME [-BbKkmnpqSsv][-D destdir][-M mirror][-P path]" 1>&2
 	echo "  -B	Do not update the bootloader"
 	echo "  -b	Update the bootloader"
+	echo "  -D	Specify a different directory where to update"
 	echo "  -K	Do not update the kernel"
 	echo "  -k	Update the kernel"
 	echo "  -M	Specify a different mirror when downloading"
@@ -348,8 +349,11 @@ _verify()
 
 #main
 #parse arguments
-while getopts "O:M:P:BbKkmnpqSsv" name; do
+while getopts "D:O:M:P:BbKkmnpqSsv" name; do
 	case "$name" in
+		D)
+			DESTDIR="$OPTARG"
+			;;
 		O)
 			export "${OPTARG%%=*}"="${OPTARG#*=}"
 			;;
