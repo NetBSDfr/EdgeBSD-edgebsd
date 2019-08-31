@@ -43,6 +43,7 @@ MODULES=0
 NOOP=0
 PACKAGES=0
 PROGNAME="edgebsd-update"
+SETEXT=".tgz"
 SETS=
 [ -n "$TMPDIR" ] || TMPDIR="/tmp"
 UPDATE_ETC=0
@@ -98,7 +99,7 @@ _arch_evbarm_update_kernel()
 		_error "$EDGEBSD_KERNEL: Could not mount the boot partition"
 		return $?
 	fi
-	file="kern-${EDGEBSD_KERNEL}.tgz"
+	file="kern-${EDGEBSD_KERNEL}${SETEXT}"
 	[ -z "${EDGEBSD_MIRROR##/*}" ] && file="$EDGEBSD_PATH/$file"
 	if [ $VERIFY -ne 0 ]; then
 		_info "Verifying kernel ${EDGEBSD_KERNEL}..."
@@ -145,7 +146,7 @@ _arch_generic_update_bootloader()
 
 _arch_generic_update_kernel()
 {
-	file="kern-${EDGEBSD_KERNEL}.tgz"
+	file="kern-${EDGEBSD_KERNEL}${SETEXT}"
 	[ -z "${EDGEBSD_MIRROR##/*}" ] && file="$EDGEBSD_PATH/$file"
 	if [ $VERIFY -ne 0 ]; then
 		_info "Verifying kernel ${EDGEBSD_KERNEL}..."
@@ -436,17 +437,17 @@ fi
 
 #download the kernel
 if [ $KERNEL -ne 0 -a -n "${EDGEBSD_MIRROR##/*}" ]; then
-	if [ ! -f "kern-${EDGEBSD_KERNEL}.tgz" ]; then
+	if [ ! -f "kern-${EDGEBSD_KERNEL}${SETEXT}" ]; then
 		_info "Downloading kernel ${EDGEBSD_KERNEL}..."
-		_download "kern-${EDGEBSD_KERNEL}.tgz"
+		_download "kern-${EDGEBSD_KERNEL}${SETEXT}"
 		if [ $? -ne 0 ]; then
 			_error "$EDGEBSD_KERNEL: Could not download the kernel"
 			exit $?
 		fi
 	fi
-	if [ $VERIFY -ne 0 -a ! -f "kern-${EDGEBSD_KERNEL}.tgz.sig" ]; then
+	if [ $VERIFY -ne 0 -a ! -f "kern-${EDGEBSD_KERNEL}${SETEXT}.sig" ]; then
 		_info "Downloading signature for kernel ${EDGEBSD_KERNEL}..."
-		_download "kern-${EDGEBSD_KERNEL}.tgz.sig"
+		_download "kern-${EDGEBSD_KERNEL}${SETEXT}.sig"
 		if [ $? -ne 0 ]; then
 			_error "$EDGEBSD_KERNEL: Could not download the kernel signature"
 			exit $?
@@ -458,20 +459,20 @@ fi
 res=0
 for set in $SETS; do
 	[ -z "${EDGEBSD_MIRROR##/*}" ] && continue
-	[ -f "${set}.tgz" ] && continue
+	[ -f "${set}${SETEXT}" ] && continue
 	_info "Downloading set ${set}..."
-	_download "${set}.tgz"
+	_download "${set}${SETEXT}"
 	res=$?
 	[ $res -eq 0 ] || break
 	[ $VERIFY -eq 0 ] && continue
 	_info "Downloading signature for set ${set}..."
-	_download "${set}.tgz.sig"
+	_download "${set}${SETEXT}.sig"
 	res=$?
 	[ $res -eq 0 ] || break
 done
 if [ $res -ne 0 ]; then
 	_error "$set: Could not download the set"
-	[ -f "${set}.tgz" ] && $RM -- "${set}.tgz"
+	[ -f "${set}${SETEXT}" ] && $RM -- "${set}${SETEXT}"
 	exit $?
 fi
 
@@ -499,7 +500,7 @@ for set in $SETS; do
 		#skip the "etc" set if already installed
 		[ -f "$DESTDIR$ETCMTREE/set.$set" ] && continue
 	fi
-	file="${set}.tgz"
+	file="${set}${SETEXT}"
 	[ -z "${EDGEBSD_MIRROR##/*}" ] && file="$EDGEBSD_PATH/$file"
 	if [ $VERIFY -ne 0 ]; then
 		_info "Verifying set ${set}..."
@@ -520,7 +521,7 @@ fi
 #update the configuration
 if [ $UPDATE_ETC -eq 1 ]; then
 	set="etc"
-	file="${set}.tgz"
+	file="${set}${SETEXT}"
 	[ -z "${EDGEBSD_MIRROR##/*}" ] && file="$EDGEBSD_PATH/$file"
 	if [ $VERIFY -ne 0 ]; then
 		_info "Verifying set ${set}..."
@@ -583,12 +584,12 @@ fi
 for set in $SETS; do
 	[ -z "${EDGEBSD_MIRROR##/*}" ] && continue
 	_info "Removing downloaded set ${set}..."
-	[ $VERIFY -ne 0 ] && $RM -- "${set}.tgz.sig"
-	$RM -- "${set}.tgz"
+	[ $VERIFY -ne 0 ] && $RM -- "${set}${SETEXT}.sig"
+	$RM -- "${set}${SETEXT}"
 done
 if [ $KERNEL -ne 0 -a -n "${EDGEBSD_MIRROR##/*}" ]; then
-	[ $VERIFY -ne 0 ] && $RM -- "kern-${EDGEBSD_KERNEL}.tgz.sig"
-	$RM -- "kern-${EDGEBSD_KERNEL}.tgz"
+	[ $VERIFY -ne 0 ] && $RM -- "kern-${EDGEBSD_KERNEL}${SETEXT}.sig"
+	$RM -- "kern-${EDGEBSD_KERNEL}${SETEXT}"
 fi
 
 _info "Update successful."
