@@ -17,7 +17,6 @@ $(OBJDIR)tests.log: ./tests.sh
 	./tests.sh -P "$(PREFIX)" -- "$(OBJDIR)tests.log"
 
 clean:
-	$(RM) -- $(shlint.log_OBJS) $(tests.log_OBJS)
 	./shlint.sh -c -P "$(PREFIX)" -- "$(OBJDIR)shlint.log"
 	./tests.sh -c -P "$(PREFIX)" -- "$(OBJDIR)tests.log"
 

@@ -17,7 +17,6 @@ $(OBJDIR)edgebsd-update.html: docbook.sh edgebsd-update.css.xml edgebsd-update.x
 	./docbook.sh -P "$(PREFIX)" -- "$(OBJDIR)edgebsd-update.html"
 
 clean:
-	$(RM) -- $(edgebsd-update.8_OBJS) $(edgebsd-update.html_OBJS)
 	./docbook.sh -c -P "$(PREFIX)" -- "$(OBJDIR)edgebsd-update.8"
 	./docbook.sh -c -P "$(PREFIX)" -- "$(OBJDIR)edgebsd-update.html"
 
