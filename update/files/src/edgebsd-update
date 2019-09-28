@@ -320,20 +320,20 @@ _info()
 _usage()
 {
 	echo "Usage: $PROGNAME [-BbKkmnpqSsv][-D destdir][-M mirror][-P path]" 1>&2
-	echo "  -B	Do not update the bootloader"
-	echo "  -b	Update the bootloader"
-	echo "  -D	Specify a different directory where to update"
-	echo "  -K	Do not update the kernel"
-	echo "  -k	Update the kernel"
-	echo "  -M	Specify a different mirror when downloading"
-	echo "  -m	Update the kernel modules"
-	echo "  -n	Download the sets but do not install them"
-	echo "  -P	Full path to the sets"
-	echo "  -p	Update the packages"
-	echo "  -q	Enable quiet mode"
-	echo "  -S	Do not verify signatures"
-	echo "  -s	Verify signatures (default)"
-	echo "  -v	Be more verbose"
+	echo "  -B	Do not update the bootloader" 1>&2
+	echo "  -b	Update the bootloader" 1>&2
+	echo "  -D	Specify a different directory where to update" 1>&2
+	echo "  -K	Do not update the kernel" 1>&2
+	echo "  -k	Update the kernel" 1>&2
+	echo "  -M	Specify a different mirror when downloading" 1>&2
+	echo "  -m	Update the kernel modules" 1>&2
+	echo "  -n	Download the sets but do not install them" 1>&2
+	echo "  -P	Full path to the sets" 1>&2
+	echo "  -p	Update the packages" 1>&2
+	echo "  -q	Enable quiet mode" 1>&2
+	echo "  -S	Do not verify signatures" 1>&2
+	echo "  -s	Verify signatures (default)" 1>&2
+	echo "  -v	Be more verbose" 1>&2
 	return 1
 }
 
