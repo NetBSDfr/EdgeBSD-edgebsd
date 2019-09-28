@@ -43,7 +43,8 @@ MODULES=0
 NOOP=0
 PACKAGES=0
 PROGNAME="edgebsd-update"
-SETEXT=".tgz"
+RELEASE=
+SETEXT=
 SETS=
 [ -n "$TMPDIR" ] || TMPDIR="/tmp"
 UPDATE_ETC=0
@@ -69,6 +70,7 @@ PROGRESS="/usr/bin/progress"
 RM="/bin/rm -f"
 TAR="/rescue/tar"
 UMOUNT="/sbin/umount"
+UNAME="/usr/bin/uname"
 
 
 #functions
@@ -319,7 +321,7 @@ _info()
 #usage
 _usage()
 {
-	echo "Usage: $PROGNAME [-BbKkmnpqSsv][-D destdir][-M mirror][-P path]" 1>&2
+	echo "Usage: $PROGNAME [-BbKkmnpqSsv][-D destdir][-M mirror][-P path][-r release]" 1>&2
 	echo "  -B	Do not update the bootloader" 1>&2
 	echo "  -b	Update the bootloader" 1>&2
 	echo "  -D	Specify a different directory where to update" 1>&2
@@ -331,6 +333,7 @@ _usage()
 	echo "  -P	Full path to the sets" 1>&2
 	echo "  -p	Update the packages" 1>&2
 	echo "  -q	Enable quiet mode" 1>&2
+	echo "  -r	Set the release" 1>&2
 	echo "  -S	Do not verify signatures" 1>&2
 	echo "  -s	Verify signatures (default)" 1>&2
 	echo "  -v	Be more verbose" 1>&2
@@ -349,7 +352,7 @@ _verify()
 
 #main
 #parse arguments
-while getopts "D:O:M:P:BbKkmnpqSsv" name; do
+while getopts "D:O:M:P:BbKkmnpqr:Ssv" name; do
 	case "$name" in
 		D)
 			DESTDIR="$OPTARG"
@@ -388,6 +391,9 @@ while getopts "D:O:M:P:BbKkmnpqSsv" name; do
 			FTP="/usr/bin/ftp -V"
 			VERBOSE=0
 			;;
+		r)
+			RELEASE="$OPTARG"
+			;;
 		S)
 			VERIFY=0
 			;;
@@ -409,6 +415,24 @@ if [ $# -ne 0 ]; then
 	_usage
 	exit $?
 fi
+
+#detect the release
+if [ -z "$RELEASE" ]; then
+	RELEASE=$($UNAME -r)
+	RELEASE=${RELEASE%%.*}
+fi
+case "$RELEASE" in
+	6|7|8)
+		[ -n "$SETEXT" ] || SETEXT=".tgz"
+		;;
+	9)
+		[ -n "$SETEXT" ] || SETEXT=".tar.xz"
+		;;
+	*)
+		_error "$RELEASE: Unsupported release"
+		exit $?
+		;;
+esac
 
 if [ $VERIFY -ne 0 ]; then
 	#import the GPG key
