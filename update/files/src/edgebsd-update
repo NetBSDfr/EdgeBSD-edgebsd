@@ -49,6 +49,7 @@ SETS=
 [ -n "$TMPDIR" ] || TMPDIR="/tmp"
 UPDATE_ETC=0
 USRMDECBOOT="/usr/mdec/boot"
+USRMDECPREKERN="/usr/mdec/prekern"
 VERBOSE=1
 VERIFY=1
 VERIFY_USERID="root@edgebsd.org"
@@ -142,8 +143,11 @@ _arch_generic_update_bootloader()
 	#XXX is this always the case?
 	if [ -f "$DESTDIR/boot" -a -f "$DESTDIR$USRMDECBOOT" ]; then
 		$INSTALL -m 0444 "$DESTDIR$USRMDECBOOT" "$DESTDIR/boot"
-		#FIXME also use installboot(8) when appropriate
 	fi
+	if [ -f "$DESTDIR/prekern" -a -f "$DESTDIR$USRMDECPREKERN" ]; then
+		$INSTALL -m 0444 "$DESTDIR$USRMDECPREKERN" "$DESTDIR/prekern"
+	fi
+	#FIXME also use installboot(8) when appropriate
 }
 
 _arch_generic_update_kernel()
