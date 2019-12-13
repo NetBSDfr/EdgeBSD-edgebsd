@@ -140,12 +140,24 @@ _arch_evbarm_update_kernel()
 
 _arch_generic_update_bootloader()
 {
-	#XXX is this always the case?
-	if [ -f "$DESTDIR/boot" -a -f "$DESTDIR$USRMDECBOOT" ]; then
-		$INSTALL -m 0444 "$DESTDIR$USRMDECBOOT" "$DESTDIR/boot"
+	if [ -f "$DESTDIR$USRMDECBOOT" ]; then
+		if [ -f "$DESTDIR/altroot/boot" ]; then
+			$INSTALL -m 0444 "$DESTDIR$USRMDECBOOT" \
+				"$DESTDIR/altroot/boot"
+		fi
+		if [ -f "$DESTDIR/boot" ]; then
+			$INSTALL -m 0444 "$DESTDIR$USRMDECBOOT" "$DESTDIR/boot"
+		fi
 	fi
-	if [ -f "$DESTDIR/prekern" -a -f "$DESTDIR$USRMDECPREKERN" ]; then
-		$INSTALL -m 0444 "$DESTDIR$USRMDECPREKERN" "$DESTDIR/prekern"
+	if [ -f "$DESTDIR$USRMDECPREKERN" ]; then
+		if [ -f "$DESTDIR/altroot/prekern" ]; then
+			$INSTALL -m 0444 "$DESTDIR$USRMDECPREKERN" \
+				"$DESTDIR/altroot/prekern"
+		fi
+		if [ -f "$DESTDIR/prekern" ]; then
+			$INSTALL -m 0444 "$DESTDIR$USRMDECPREKERN" \
+				"$DESTDIR/prekern"
+		fi
 	fi
 	#FIXME also use installboot(8) when appropriate
 }
