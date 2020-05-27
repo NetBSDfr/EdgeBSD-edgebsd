@@ -394,6 +394,34 @@ _info()
 }
 
 
+#install_sets
+_install_sets()
+{
+	#install the relevant sets
+	$MKDIR -- "$DESTDIR"
+	for set in $SETS; do
+		if [ "$set" = "etc" ]; then
+			UPDATE_ETC=1
+			#skip the "etc" set if already installed
+			[ -f "$DESTDIR$ETCMTREE/set.$set" ] && continue
+		fi
+		file="${set}${SETEXT}"
+		[ -z "${EDGEBSD_MIRROR##/*}" ] && file="$EDGEBSD_PATH/$file"
+		if [ $VERIFY -ne 0 ]; then
+			_info "Verifying set ${set}..."
+			_verify "$file"
+			res=$?
+			[ $res -eq 0 ] || return $res
+		fi
+		_info "Installing set ${set}..."
+		$DEBUG $PROGRESS -f "$file" $TAR -xzpf - -C "$DESTDIR"
+		res=$?
+		[ $res -eq 0 ] || return $res
+	done
+	return 0
+}
+
+
 #update_bootloader
 _update_bootloader()
 {
@@ -623,7 +651,7 @@ fi
 
 _download_sets
 if [ $? -ne 0 ]; then
-	_error "$set: Could not download the sets"
+	_error "Could not download the sets"
 	exit $?
 fi
 
@@ -643,29 +671,9 @@ if [ $KERNEL -ne 0 ]; then
 	esac
 fi
 
-#install the relevant sets
-$MKDIR -- "$DESTDIR"
-for set in $SETS; do
-	if [ "$set" = "etc" ]; then
-		UPDATE_ETC=1
-		#skip the "etc" set if already installed
-		[ -f "$DESTDIR$ETCMTREE/set.$set" ] && continue
-	fi
-	file="${set}${SETEXT}"
-	[ -z "${EDGEBSD_MIRROR##/*}" ] && file="$EDGEBSD_PATH/$file"
-	if [ $VERIFY -ne 0 ]; then
-		_info "Verifying set ${set}..."
-		_verify "$file"
-		res=$?
-		[ $res -eq 0 ] || break
-	fi
-	_info "Installing set ${set}..."
-	$DEBUG $PROGRESS -f "$file" $TAR -xzpf - -C "$DESTDIR"
-	res=$?
-	[ $res -eq 0 ] || break
-done
+_install_sets
 if [ $res -ne 0 ]; then
-	_error "$set: Could not install the set"
+	_error "Could not install the sets"
 	exit $?
 fi
 
@@ -691,12 +699,12 @@ fi
 for set in $SETS; do
 	[ -z "${EDGEBSD_MIRROR##/*}" ] && continue
 	_info "Removing downloaded set ${set}..."
-	[ $VERIFY -ne 0 ] && $RM -- "${set}${SETEXT}.sig"
 	$RM -- "${set}${SETEXT}"
+	[ $VERIFY -ne 0 ] && $RM -- "${set}${SETEXT}.sig"
 done
 if [ $KERNEL -ne 0 -a -n "${EDGEBSD_MIRROR##/*}" ]; then
-	[ $VERIFY -ne 0 ] && $RM -- "kern-${EDGEBSD_KERNEL}${SETEXT}.sig"
 	$RM -- "kern-${EDGEBSD_KERNEL}${SETEXT}"
+	[ $VERIFY -ne 0 ] && $RM -- "kern-${EDGEBSD_KERNEL}${SETEXT}.sig"
 fi
 
 _info "Update successful."
