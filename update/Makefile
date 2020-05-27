@@ -9,7 +9,7 @@ HOMEPAGE=	https://www.edgebsd.org/
 COMMENT=	Update script for EdgeBSD
 LICENSE=	modified-bsd
 
-VERSION=	9
+VERSION=	10
 
 MAKE_FLAGS+=	PREFIX=${PREFIX:Q}
 
