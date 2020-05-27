@@ -1,5 +1,6 @@
 PACKAGE	= edgebsd-update
 VERSION	= 9
+VENDOR	= EdgeBSD
 SUBDIRS	= doc src tests
 RM	= rm -f
 LN	= ln -f
