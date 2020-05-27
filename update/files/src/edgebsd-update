@@ -67,6 +67,7 @@ NETPGPKEYS="/usr/bin/netpgpkeys"
 PAXCTL="/usr/sbin/paxctl"
 PKGIN="/usr/pkg/bin/pkgin"
 POSTINSTALL="/usr/sbin/postinstall"
+PRINTF="printf"
 PROGRESS="/usr/bin/progress"
 RM="/bin/rm -f"
 TAR="/rescue/tar"
@@ -121,7 +122,8 @@ _arch_evbarm_update_kernel()
 		fi
 	fi
 	_info "Installing kernel ${EDGEBSD_KERNEL}..."
-	$DEBUG $PROGRESS -f "$file" $TAR -xzpf - -C "$DESTDIR/boot"
+	$DEBUG $PROGRESS -f "$file" -p "$($PRINTF "%-7s " "$EDGEBSD_KERNEL")" \
+		$TAR -xzpf - -C "$DESTDIR/boot"
 	if [ $? -ne 0 ]; then
 		_error "$EDGEBSD_KERNEL: Could not install the kernel"
 		exit $?
@@ -183,7 +185,8 @@ _arch_generic_update_kernel()
 		fi
 	fi
 	_info "Installing kernel ${EDGEBSD_KERNEL}..."
-	$DEBUG $PROGRESS -f "$file" $TAR -xzpf - -C "$DESTDIR"
+	$DEBUG $PROGRESS -f "$file" -p "$($PRINTF "%-7s " "$EDGEBSD_KERNEL")" \
+		$TAR -xzpf - -C "$DESTDIR"
 	if [ $? -ne 0 ]; then
 		_error "$EDGEBSD_KERNEL: Could not install the kernel"
 		exit $?
@@ -394,34 +397,6 @@ _info()
 }
 
 
-#install_sets
-_install_sets()
-{
-	#install the relevant sets
-	$MKDIR -- "$DESTDIR"
-	for set in $SETS; do
-		if [ "$set" = "etc" ]; then
-			UPDATE_ETC=1
-			#skip the "etc" set if already installed
-			[ -f "$DESTDIR$ETCMTREE/set.$set" ] && continue
-		fi
-		file="${set}${SETEXT}"
-		[ -z "${EDGEBSD_MIRROR##/*}" ] && file="$EDGEBSD_PATH/$file"
-		if [ $VERIFY -ne 0 ]; then
-			_info "Verifying set ${set}..."
-			_verify "$file"
-			res=$?
-			[ $res -eq 0 ] || return $res
-		fi
-		_info "Installing set ${set}..."
-		$DEBUG $PROGRESS -f "$file" $TAR -xzpf - -C "$DESTDIR"
-		res=$?
-		[ $res -eq 0 ] || return $res
-	done
-	return 0
-}
-
-
 #update_bootloader
 _update_bootloader()
 {
@@ -458,7 +433,7 @@ _update_configuration()
 			res=$?
 			[ $res -eq 0 ] || return $res
 		fi
-		_info "Configuring the system..."
+		_info "Updating the configuration..."
 		$DEBUG $POSTINSTALL -s "$file" -d "$DESTDIR" fix > "$DEVNULL"
 		res=$?
 		#XXX fix /usr/libexec/cc1*
@@ -489,6 +464,35 @@ _update_packages()
 		fi
 		return $?
 	fi
+	return 0
+}
+
+
+#update_sets
+_update_sets()
+{
+	#update the relevant sets
+	_info "Updating the sets..."
+	$MKDIR -- "$DESTDIR"
+	for set in $SETS; do
+		if [ "$set" = "etc" ]; then
+			UPDATE_ETC=1
+			#skip the "etc" set if already installed
+			[ -f "$DESTDIR$ETCMTREE/set.$set" ] && continue
+		fi
+		file="${set}${SETEXT}"
+		[ -z "${EDGEBSD_MIRROR##/*}" ] && file="$EDGEBSD_PATH/$file"
+		if [ $VERIFY -ne 0 ]; then
+			_info "Verifying set ${set}..."
+			_verify "$file"
+			res=$?
+			[ $res -eq 0 ] || return $res
+		fi
+		$DEBUG $PROGRESS -f "$file" -p "$($PRINTF "%-7s " "${set}")" \
+			$TAR -xzpf - -C "$DESTDIR"
+		res=$?
+		[ $res -eq 0 ] || return $res
+	done
 	return 0
 }
 
@@ -671,9 +675,9 @@ if [ $KERNEL -ne 0 ]; then
 	esac
 fi
 
-_install_sets
+_update_sets
 if [ $res -ne 0 ]; then
-	_error "Could not install the sets"
+	_error "Could not update the sets"
 	exit $?
 fi
 
