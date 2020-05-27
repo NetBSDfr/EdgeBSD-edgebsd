@@ -247,6 +247,66 @@ _download()
 }
 
 
+#download_kernel
+_download_kernel()
+{
+	#download the kernel
+	if [ $KERNEL -ne 0 -a -n "${EDGEBSD_MIRROR##/*}" ]; then
+		if [ ! -f "kern-${EDGEBSD_KERNEL}${SETEXT}" ]; then
+			_info "Downloading kernel ${EDGEBSD_KERNEL}..."
+			_download "kern-${EDGEBSD_KERNEL}${SETEXT}"
+			return $?
+		fi
+	fi
+	return 0
+}
+
+
+#download_kernel_signature
+_download_kernel_signature()
+{
+	#download the kernel signature
+	if [ $KERNEL -ne 0 -a -n "${EDGEBSD_MIRROR##/*}" ]; then
+		if [ $VERIFY -ne 0 -a ! -f "kern-${EDGEBSD_KERNEL}${SETEXT}.sig" ]; then
+			_info "Downloading signature for kernel ${EDGEBSD_KERNEL}..."
+			_download "kern-${EDGEBSD_KERNEL}${SETEXT}.sig"
+			return $?
+		fi
+	fi
+	return 0
+}
+
+
+#download_sets
+_download_sets()
+{
+	res=0
+
+	#download the relevant sets
+	for set in $SETS; do
+		[ -z "${EDGEBSD_MIRROR##/*}" ] && continue
+		[ -f "${set}${SETEXT}" ] && continue
+		_info "Downloading set ${set}..."
+		_download "${set}${SETEXT}"
+		res=$?
+		[ $res -eq 0 ] || break
+		[ $VERIFY -eq 0 ] && continue
+		_info "Downloading signature for set ${set}..."
+		_download "${set}${SETEXT}.sig"
+		res=$?
+		[ $res -eq 0 ] || break
+	done
+	if [ $res -ne 0 -a -n "${EDGEBSD_MIRROR##/*}" ]; then
+		for set in $SETS; do
+			$RM -- "${set}${SETEXT}"
+			[ $VERIFY -eq 0 ] && continue
+			$RM -- "${set}${SETEXT}.sig"
+		done
+	fi
+	return $res
+}
+
+
 #error
 _error()
 {
@@ -331,6 +391,77 @@ mEH+2rR/ZC0mmQ==
 _info()
 {
 	[ $VERBOSE -ge 1 ] && echo "$@" 1>&2
+}
+
+
+#update_bootloader
+_update_bootloader()
+{
+	#update the bootloader
+	if [ $BOOTLOADER -ne 0 ]; then
+		_info "Updating the bootloader..."
+		case "$EDGEBSD_ARCH" in
+			amd64|evbarm|i386|sparc|sparc64)
+				"_arch_${EDGEBSD_ARCH}_update_bootloader"
+				return $?
+				;;
+			*)
+				return 2
+				;;
+		esac
+	fi
+	return 0
+}
+
+
+#update_configuration
+_update_configuration()
+{
+	res=0
+
+	#update the configuration
+	if [ $UPDATE_ETC -eq 1 ]; then
+		set="etc"
+		file="${set}${SETEXT}"
+		[ -z "${EDGEBSD_MIRROR##/*}" ] && file="$EDGEBSD_PATH/$file"
+		if [ $VERIFY -ne 0 ]; then
+			_info "Verifying set ${set}..."
+			_verify "$file"
+			res=$?
+			[ $res -eq 0 ] || return $res
+		fi
+		_info "Configuring the system..."
+		$DEBUG $POSTINSTALL -s "$file" -d "$DESTDIR" fix > "$DEVNULL"
+		res=$?
+		#XXX fix /usr/libexec/cc1*
+		if [ $res -eq 0 -a -x "$PAXCTL" ]; then
+			for i in cc1 cc1obj cc1plus; do
+				if [ -x "$DESTDIR/usr/libexec/$i" ]; then
+					$PAXCTL +m "$DESTDIR/usr/libexec/$i"
+					res=$?
+				fi
+				[ $res -eq 0 ] || return $res
+			done
+		fi
+	fi
+	return $res
+}
+
+
+#update_packages
+_update_packages()
+{
+	#update the packages
+	if [ $PACKAGES -ne 0 ]; then
+		_info "Updating the packages..."
+		if [ -n "$DESTDIR" ]; then
+			$PKGIN -y -c "$DESTDIR" full-upgrade
+		else
+			$PKGIN -y full-upgrade
+		fi
+		return $?
+	fi
+	return 0
 }
 
 
@@ -479,44 +610,20 @@ else
 	EDGEBSD_MIRROR="/nonexistent"
 fi
 
-#download the kernel
-if [ $KERNEL -ne 0 -a -n "${EDGEBSD_MIRROR##/*}" ]; then
-	if [ ! -f "kern-${EDGEBSD_KERNEL}${SETEXT}" ]; then
-		_info "Downloading kernel ${EDGEBSD_KERNEL}..."
-		_download "kern-${EDGEBSD_KERNEL}${SETEXT}"
-		if [ $? -ne 0 ]; then
-			_error "$EDGEBSD_KERNEL: Could not download the kernel"
-			exit $?
-		fi
-	fi
-	if [ $VERIFY -ne 0 -a ! -f "kern-${EDGEBSD_KERNEL}${SETEXT}.sig" ]; then
-		_info "Downloading signature for kernel ${EDGEBSD_KERNEL}..."
-		_download "kern-${EDGEBSD_KERNEL}${SETEXT}.sig"
-		if [ $? -ne 0 ]; then
-			_error "$EDGEBSD_KERNEL: Could not download the kernel signature"
-			exit $?
-		fi
-	fi
+_download_kernel
+if [ $? -ne 0 ]; then
+	_error "$EDGEBSD_KERNEL: Could not download the kernel"
+	exit $?
+fi
+_download_kernel_signature
+if [ $? -ne 0 ]; then
+	_error "$EDGEBSD_KERNEL: Could not download the kernel signature"
+	exit $?
 fi
 
-#download the relevant sets
-res=0
-for set in $SETS; do
-	[ -z "${EDGEBSD_MIRROR##/*}" ] && continue
-	[ -f "${set}${SETEXT}" ] && continue
-	_info "Downloading set ${set}..."
-	_download "${set}${SETEXT}"
-	res=$?
-	[ $res -eq 0 ] || break
-	[ $VERIFY -eq 0 ] && continue
-	_info "Downloading signature for set ${set}..."
-	_download "${set}${SETEXT}.sig"
-	res=$?
-	[ $res -eq 0 ] || break
-done
-if [ $res -ne 0 ]; then
-	_error "$set: Could not download the set"
-	[ -f "${set}${SETEXT}" ] && $RM -- "${set}${SETEXT}"
+_download_sets
+if [ $? -ne 0 ]; then
+	_error "$set: Could not download the sets"
 	exit $?
 fi
 
@@ -562,66 +669,22 @@ if [ $res -ne 0 ]; then
 	exit $?
 fi
 
-#update the configuration
-if [ $UPDATE_ETC -eq 1 ]; then
-	set="etc"
-	file="${set}${SETEXT}"
-	[ -z "${EDGEBSD_MIRROR##/*}" ] && file="$EDGEBSD_PATH/$file"
-	if [ $VERIFY -ne 0 ]; then
-		_info "Verifying set ${set}..."
-		_verify "$file"
-		res=$?
-		[ $res -eq 0 ] || break
-	fi
-	_info "Configuring the system..."
-	$DEBUG $POSTINSTALL -s "$file" -d "$DESTDIR" fix > "$DEVNULL"
-	res=$?
-	#XXX fix /usr/libexec/cc1*
-	if [ $res -eq 0 -a -x "$PAXCTL" ]; then
-		for i in cc1 cc1obj cc1plus; do
-			if [ -x "$DESTDIR/usr/libexec/$i" ]; then
-				$PAXCTL +m "$DESTDIR/usr/libexec/$i"
-				res=$?
-			fi
-			[ $res -eq 0 ] || break
-		done
-	fi
-fi
+_update_configuration
 if [ $res -ne 0 ]; then
 	_error "Could not update the configuration"
 	exit $?
 fi
 
-#update the packages
-if [ $PACKAGES -ne 0 ]; then
-	_info "Updating the packages..."
-	if [ -n "$DESTDIR" ]; then
-		$PKGIN -y -c "$DESTDIR" full-upgrade
-	else
-		$PKGIN -y full-upgrade
-	fi
-	if [ $? -ne 0 ]; then
-		_error "$set: Could not update the packages"
-		exit $?
-	fi
+_update_packages
+if [ $? -ne 0 ]; then
+	_error "$set: Could not update the packages"
+	exit $?
 fi
 
-#update the bootloader
-if [ $BOOTLOADER -ne 0 ]; then
-	_info "Updating the bootloader..."
-	case "$EDGEBSD_ARCH" in
-		amd64|evbarm|i386|sparc|sparc64)
-			"_arch_${EDGEBSD_ARCH}_update_bootloader"
-			res=$?
-			;;
-		*)
-			res=2
-			;;
-	esac
-	if [ $res -ne 0 ]; then
-		_error "Could not update the bootloader"
-		exit $?
-	fi
+_update_bootloader
+if [ $? -ne 0 ]; then
+	_error "Could not update the bootloader"
+	exit $?
 fi
 
 #clean the sets
