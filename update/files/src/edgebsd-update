@@ -147,20 +147,21 @@ _arch_generic_update_bootloader()
 	if [ -f "$DESTDIR$USRMDECBOOT" ]; then
 		if [ -f "$DESTDIR/altroot/boot" ]; then
 			$INSTALL -m 0444 "$DESTDIR$USRMDECBOOT" \
-				"$DESTDIR/altroot/boot"
+				"$DESTDIR/altroot/boot"		|| return 2
 		fi
 		if [ -f "$DESTDIR/boot" ]; then
-			$INSTALL -m 0444 "$DESTDIR$USRMDECBOOT" "$DESTDIR/boot"
+			$INSTALL -m 0444 "$DESTDIR$USRMDECBOOT" \
+				"$DESTDIR/boot"			|| return 2
 		fi
 	fi
 	if [ -f "$DESTDIR$USRMDECPREKERN" ]; then
 		if [ -f "$DESTDIR/altroot/prekern" ]; then
 			$INSTALL -m 0444 "$DESTDIR$USRMDECPREKERN" \
-				"$DESTDIR/altroot/prekern"
+				"$DESTDIR/altroot/prekern"	|| return 2
 		fi
 		if [ -f "$DESTDIR/prekern" ]; then
 			$INSTALL -m 0444 "$DESTDIR$USRMDECPREKERN" \
-				"$DESTDIR/prekern"
+				"$DESTDIR/prekern"		|| return 2
 		fi
 	fi
 	#FIXME also use installboot(8) when appropriate
