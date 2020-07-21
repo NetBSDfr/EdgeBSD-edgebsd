@@ -504,16 +504,6 @@ _update_configuration()
 		_info "Updating the configuration..."
 		$DEBUG $POSTINSTALL -s "$file" -d "$DESTDIR" fix > "$DEVNULL"
 		res=$?
-		#XXX fix /usr/libexec/cc1*
-		if [ $res -eq 0 -a -x "$PAXCTL" ]; then
-			for i in cc1 cc1obj cc1plus; do
-				if [ -x "$DESTDIR/usr/libexec/$i" ]; then
-					$PAXCTL +m "$DESTDIR/usr/libexec/$i"
-					res=$?
-				fi
-				[ $res -eq 0 ] || return $res
-			done
-		fi
 	fi
 	return $res
 }
