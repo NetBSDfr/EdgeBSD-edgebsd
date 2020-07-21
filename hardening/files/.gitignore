@@ -1,0 +1,8 @@
+*.a
+*.o
+*.so
+*.so.*
+/hardening
+/true
+/true-relro
+/true-relro-now
