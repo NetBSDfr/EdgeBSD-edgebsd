@@ -536,7 +536,7 @@ _update_sets()
 		if [ "$set" = "etc" ]; then
 			UPDATE_ETC=1
 			#skip the "etc" set if already installed
-			[ -f "$DESTDIR$ETCMTREE/set.$set" ] && continue
+			[ -f "$DESTDIR$ETCMTREE/set.$set" ]	&& continue
 		fi
 		file="${set}${SETEXT}"
 		[ -z "${EDGEBSD_MIRROR##/*}" ] && file="$EDGEBSD_PATH/$file"
@@ -544,12 +544,19 @@ _update_sets()
 			_info "Verifying set ${set}..."
 			_verify "$file"
 			res=$?
-			[ $res -eq 0 ] || return $res
+			[ $res -eq 0 ]				|| return $res
 		fi
 		_progress -f "$file" -p "$($PRINTF "%-7s " "${set}")" \
 			$TAR -xzpf - -C "$DESTDIR"
 		res=$?
-		[ $res -eq 0 ] || return $res
+		[ $res -eq 0 ]					|| return $res
+		#also extract the modules to /altroot if relevant
+		if [ "$set" = "modules" -a -d "$DESTDIR/altroot/stand" ]; then
+			_progress -f "$file" -p "$($PRINTF "%-7s " "${set}")" \
+				$TAR -xzpf - -C "$DESTDIR/altroot"
+			res=$?
+			[ $res -eq 0 ]				|| return $res
+		fi
 	done
 	return 0
 }
