@@ -232,6 +232,28 @@ _arch_sparc64_update_kernel()
 }
 
 
+#clean_kernel
+_clean_kernel()
+{
+	if [ $KERNEL -ne 0 -a -n "${EDGEBSD_MIRROR##/*}" ]; then
+		$RM -- "kern-${EDGEBSD_KERNEL}${SETEXT}"
+		[ $VERIFY -ne 0 ] && $RM -- "kern-${EDGEBSD_KERNEL}${SETEXT}.sig"
+	fi
+}
+
+
+#clean_sets
+_clean_sets()
+{
+	[ -n "${EDGEBSD_MIRROR##/*}" ]				|| return
+	for set in $SETS; do
+		_info "Removing downloaded set ${set}..."
+		$RM -- "${set}${SETEXT}"
+		[ $VERIFY -ne 0 ] && $RM -- "${set}${SETEXT}.sig"
+	done
+}
+
+
 #debug
 _debug()
 {
@@ -744,16 +766,8 @@ if [ $? -ne 0 ]; then
 	exit $?
 fi
 
-#clean the sets
-for set in $SETS; do
-	[ -z "${EDGEBSD_MIRROR##/*}" ] && continue
-	_info "Removing downloaded set ${set}..."
-	$RM -- "${set}${SETEXT}"
-	[ $VERIFY -ne 0 ] && $RM -- "${set}${SETEXT}.sig"
-done
-if [ $KERNEL -ne 0 -a -n "${EDGEBSD_MIRROR##/*}" ]; then
-	$RM -- "kern-${EDGEBSD_KERNEL}${SETEXT}"
-	[ $VERIFY -ne 0 ] && $RM -- "kern-${EDGEBSD_KERNEL}${SETEXT}.sig"
-fi
+#cleanup
+_clean_sets
+_clean_kernel
 
 _info "Update successful."
