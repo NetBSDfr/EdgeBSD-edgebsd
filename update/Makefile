@@ -1,7 +1,7 @@
 # $NetBSD$
 
 PKGNAME=	edgebsd-update-${VERSION}
-PKGREVISION=	7
+PKGREVISION=	8
 CATEGORIES=	edgebsd
 
 MAINTAINER=	khorben@edgebsd.org
