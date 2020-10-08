@@ -754,7 +754,7 @@ fi
 
 _update_packages
 if [ $? -ne 0 ]; then
-	_error "$set: Could not update the packages"
+	_error "Could not update the packages"
 	exit $?
 fi
 
