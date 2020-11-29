@@ -200,15 +200,20 @@ _arch_generic_update_kernel()
 	#detect if a backup was booted
 	if [ "${bootedfile#o}" != "$bootedfile" ]; then
 		bootedfile="${bootedfile#o}"
-	else
+	elif [ -f "$DESTDIR/altroot/$bootedfile" ]; then
 		#backup the current kernel
-		if [ -f "$DESTDIR/$bootedfile" ]; then
-			$DEBUG $CP -- "$DESTDIR/$bootedfile" \
-				"$DESTDIR/o$bootedfile"
-			if [ $? -ne 0 ]; then
-				_error "$EDGEBSD_KERNEL: Could not backup the kernel"
-				return $?
-			fi
+		$DEBUG $CP -- "$DESTDIR/altroot/$bootedfile" \
+			"$DESTDIR/altroot/o$bootedfile"
+		if [ $? -ne 0 ]; then
+			_error "$EDGEBSD_KERNEL: Could not backup the kernel"
+			return $?
+		fi
+	elif [ -f "$DESTDIR/$bootedfile" ]; then
+		#backup the current kernel
+		$DEBUG $CP -- "$DESTDIR/$bootedfile" "$DESTDIR/o$bootedfile"
+		if [ $? -ne 0 ]; then
+			_error "$EDGEBSD_KERNEL: Could not backup the kernel"
+			return $?
 		fi
 	fi
 	#install the new kernel
@@ -235,7 +240,17 @@ _arch_generic_update_kernel()
 			return $?
 		fi
 	fi
-	$DEBUG $MV -- "$tmpdir/netbsd" "$DESTDIR/$bootedfile"
+	if [ -f "$DESTDIR/altroot/$bootedfile" ]; then
+		$DEBUG $MV -- "$tmpdir/netbsd" "$DESTDIR/altroot/$bootedfile"
+	else
+		$DEBUG $MV -- "$tmpdir/netbsd" "$DESTDIR/$bootedfile"
+	fi
+	if [ $? -ne 0 ]; then
+		_error "$EDGEBSD_KERNEL: Could not update the kernel"
+		$DEBUG $RM -- "$tmpdir/netbsd"
+		$DEBUG $RMDIR -- "$tmpdir"
+		return $?
+	fi
 	$DEBUG $RMDIR -- "$tmpdir"
 	return 0
 }
