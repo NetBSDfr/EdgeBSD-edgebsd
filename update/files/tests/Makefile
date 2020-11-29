@@ -8,7 +8,7 @@ MKDIR	= mkdir -m 0755 -p
 INSTALL	= install
 
 
-all: $(TARGETS)
+all:
 
 $(OBJDIR)shlint.log: shlint.sh
 	./shlint.sh -P "$(PREFIX)" -- "$(OBJDIR)shlint.log"

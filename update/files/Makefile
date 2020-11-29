@@ -2,11 +2,13 @@ PACKAGE	= edgebsd-update
 VERSION	= 9
 VENDOR	= EdgeBSD
 SUBDIRS	= doc src tests
+TARGETS	= tests
 RM	= rm -f
 LN	= ln -f
 TAR	= tar
 TGZEXT	= .tar.gz
 MKDIR	= mkdir -m 0755 -p
+INSTALL	= install
 
 
 all: subdirs
@@ -17,6 +19,9 @@ subdirs:
 		([ -d "$(OBJDIR)$$i" ] || $(MKDIR) -- "$(OBJDIR)$$i") && \
 		$(MAKE) OBJDIR="$(OBJDIR)$$i/"; \
 		else $(MAKE); fi) || exit; done
+
+tests: all
+	cd tests && (if [ -n "$(OBJDIR)" ]; then $(MAKE) OBJDIR="$(OBJDIR)tests/" "$(OBJDIR)tests/shlint.log" "$(OBJDIR)tests/tests.log"; else $(MAKE) shlint.log tests.log; fi)
 
 clean:
 	@for i in $(SUBDIRS); do (cd "$$i" && \
@@ -77,4 +82,4 @@ uninstall:
 		$(MAKE) OBJDIR="$(OBJDIR)$$i/" uninstall; \
 		else $(MAKE) uninstall; fi) || exit; done
 
-.PHONY: all subdirs clean distclean dist distcheck install uninstall
+.PHONY: all subdirs clean distclean dist distcheck install uninstall tests
