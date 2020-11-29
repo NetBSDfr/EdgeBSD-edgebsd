@@ -27,6 +27,8 @@
 
 
 
+#environment
+umask 022
 #variables
 PROGNAME="edgebsd-update"
 #executables
