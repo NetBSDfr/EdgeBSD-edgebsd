@@ -31,14 +31,15 @@
 PROGNAME="edgebsd-update"
 #executables
 CAT="/bin/cat"
-CP="/bin/cp -a"
+CP="/bin/cp -af"
 DEBUG="_debug"
 FTP="/usr/bin/ftp -V"
 GZIP="/usr/bin/gzip -9"
 INSTALL="/usr/bin/install"
 MKDIR="/bin/mkdir -p"
-MKTEMP="/usr/bin/mktemp $TMPDIR/$PROGNAME-XXXXXX"
+MKTEMP="/usr/bin/mktemp"
 MOUNT="/sbin/mount"
+MV="/bin/mv -f"
 NETPGP="/usr/bin/netpgp"
 NETPGPKEYS="/usr/bin/netpgpkeys"
 PAXCTL="/usr/sbin/paxctl"
@@ -47,6 +48,8 @@ POSTINSTALL="/usr/sbin/postinstall"
 PRINTF="printf"
 PROGRESS="/usr/bin/progress"
 RM="/bin/rm -f"
+RMDIR="/bin/rmdir"
+SYSCTL="/sbin/sysctl"
 TAR="/rescue/tar"
 UMOUNT="/sbin/umount"
 UNAME="/usr/bin/uname"
@@ -188,27 +191,50 @@ _arch_generic_update_kernel()
 			return $?
 		fi
 	fi
-	#backup the current kernel
-	if [ -f "$DESTDIR/netbsd.gz" ]; then
-		$CP -- "$DESTDIR/netbsd.gz" "$DESTDIR/onetbsd.gz"
+	#detect the kernel file booted
+	bootedfile=$($DEBUG $SYSCTL -n "machdep.booted_kernel" 2> "$DEVNULL")
+	[ $? -eq 0 -a -n "$bootedfile" ] || bootedfile="/netbsd.gz"
+	bootedfile=${bootedfile#/}
+	#detect if a backup was booted
+	if [ "${bootedfile#o}" != "$bootedfile" ]; then
+		bootedfile="${bootedfile#o}"
+	else
+		#backup the current kernel
+		if [ -f "$DESTDIR/$bootedfile" ]; then
+			$DEBUG $CP -- "$DESTDIR/$bootedfile" \
+				"$DESTDIR/o$bootedfile"
+			if [ $? -ne 0 ]; then
+				_error "$EDGEBSD_KERNEL: Could not backup the kernel"
+				return $?
+			fi
+		fi
+	fi
+	#install the new kernel
+	tmpdir=$($MKTEMP -d "$TMPDIR/$PROGNAME-XXXXXX")
+	[ $? -eq 0 ]						|| return 2
+	_info "Installing kernel ${EDGEBSD_KERNEL}..."
+	_progress -f "$file" -p "$($PRINTF "%-7s " "$EDGEBSD_KERNEL")" \
+		$TAR -xzpf - -C "$tmpdir"
+	if [ $? -ne 0 ]; then
+		_error "$EDGEBSD_KERNEL: Could not install the kernel"
+		$DEBUG $RM -- "$tmpdir/netbsd"
+		$DEBUG $RMDIR -- "$tmpdir"
+		return $?
+	fi
+	if [ "${bootedfile%.gz}" != "$bootedfile" ]; then
+		#compress the kernel
+		_info "Compressing kernel ${EDGEBSD_KERNEL}..."
+		$DEBUG $GZIP -f -c -- "$tmpdir/netbsd" > "$tmpdir/$bootedfile" &&
+			$DEBUG $MV -- "$tmpdir/$bootedfile" "$tmpdir/netbsd"
 		if [ $? -ne 0 ]; then
-			_error "$EDGEBSD_KERNEL: Could not backup the kernel"
+			_error "$EDGEBSD_KERNEL: Could not compress the kernel"
+			$DEBUG $RM -- "$tmpdir/netbsd" "$tmpdir/$bootedfile"
+			$DEBUG $RMDIR -- "$tmpdir"
 			return $?
 		fi
 	fi
-	_info "Installing kernel ${EDGEBSD_KERNEL}..."
-	_progress -f "$file" -p "$($PRINTF "%-7s " "$EDGEBSD_KERNEL")" \
-		$TAR -xzpf - -C "$DESTDIR"
-	if [ $? -ne 0 ]; then
-		_error "$EDGEBSD_KERNEL: Could not install the kernel"
-		return $?
-	fi
-	_info "Compressing kernel ${EDGEBSD_KERNEL}..."
-	$DEBUG $GZIP -f -- "$DESTDIR/netbsd"
-	if [ $? -ne 0 ]; then
-		_error "$EDGEBSD_KERNEL: Could not compress the kernel"
-		return $?
-	fi
+	$DEBUG $MV -- "$tmpdir/netbsd" "$DESTDIR/$bootedfile"
+	$DEBUG $RMDIR -- "$tmpdir"
 	return 0
 }
 
@@ -358,7 +384,7 @@ _import_gpg_key()
 {
 	ret=0
 
-	tmpfile=$($MKTEMP)
+	tmpfile=$($MKTEMP "$TMPDIR/$PROGNAME-XXXXXX")
 	[ $? -eq 0 ]						|| return 2
 	_import_gpg_key_echo > "$tmpfile" &&
 	$NETPGPKEYS --import-key "$tmpfile" > "$DEVNULL"	|| ret=2
@@ -717,6 +743,12 @@ else
 	EDGEBSD_MIRROR="/nonexistent"
 fi
 
+#detect the kernel
+if [ -z "$EDGEBSD_KERNEL" ]; then
+	EDGEBSD_KERNEL=$($UNAME -v)
+	EDGEBSD_KERNEL="${EDGEBSD_KERNEL##*(}"
+	EDGEBSD_KERNEL="${EDGEBSD_KERNEL%)*}"
+fi
 _download_kernel
 if [ $? -ne 0 ]; then
 	_error "$EDGEBSD_KERNEL: Could not download the kernel"
