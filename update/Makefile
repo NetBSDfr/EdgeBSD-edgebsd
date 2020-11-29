@@ -12,6 +12,8 @@ LICENSE=	modified-bsd
 
 MAKE_FLAGS+=	PREFIX=${PREFIX:Q}
 
+TEST_TARGET=	tests
+
 .include "../../mk/bsd.prefs.mk"
 
 .if ${PKGMANDIR} != "share/man"
