@@ -28,31 +28,7 @@
 
 
 #variables
-BOOTLOADER=0
-DESTDIR="/"
-DEVNULL="/dev/null"
-EDGEBSD_ARCH=$(uname -m)
-EDGEBSD_KERNEL="GENERIC"
-EDGEBSD_MIRROR="ftp://ftp.edgebsd.org"
-EDGEBSD_PATH=
-EDGEBSD_RELEASE=$(uname -r)
-EDGEBSD_RELEASE="EdgeBSD-${EDGEBSD_RELEASE%.*}"
-ETCMTREE="/etc/mtree"
-KERNEL=0
-MODULES=0
-NOOP=0
-PACKAGES=0
 PROGNAME="edgebsd-update"
-RELEASE=
-SETEXT=
-SETS=
-[ -n "$TMPDIR" ] || TMPDIR="/tmp"
-UPDATE_ETC=0
-USRMDECBOOT="/usr/mdec/boot"
-USRMDECPREKERN="/usr/mdec/prekern"
-VERBOSE=1
-VERIFY=1
-VERIFY_USERID="root@edgebsd.org"
 #executables
 CAT="/bin/cat"
 CP="/bin/cp -a"
@@ -75,6 +51,39 @@ TAR="/rescue/tar"
 UMOUNT="/sbin/umount"
 UNAME="/usr/bin/uname"
 ZCAT="/usr/bin/zcat"
+
+#settings
+BOOTLOADER=0
+DESTDIR="/"
+DEVNULL="/dev/null"
+EDGEBSD_ARCH=$($UNAME -m)
+EDGEBSD_KERNEL=
+EDGEBSD_MIRROR="ftp://ftp.edgebsd.org"
+EDGEBSD_PATH=
+EDGEBSD_RELEASE=$($UNAME -r)
+EDGEBSD_RELEASE="EdgeBSD-${EDGEBSD_RELEASE%.*}"
+ETCMTREE="/etc/mtree"
+KERNEL=0
+MODULES=0
+NOOP=0
+PACKAGES=0
+RELEASE=
+SETEXT=
+SETS=
+[ -n "$TMPDIR" ] || TMPDIR="/tmp"
+UPDATE_ETC=0
+USRMDECBOOT="/usr/mdec/boot"
+USRMDECPREKERN="/usr/mdec/prekern"
+VENDOR="EdgeBSD"
+VERBOSE=1
+VERIFY=1
+VERIFY_USERID="root@edgebsd.org"
+
+#load local settings
+[ -f "$SYSCONFDIR/$VENDOR/$PROGNAME.conf" ] &&
+	. "$SYSCONFDIR/$VENDOR/$PROGNAME.conf"
+[ -f "$HOME/.config/$VENDOR/$PROGNAME.conf" ] &&
+	. "$HOME/.config/$VENDOR/$PROGNAME.conf"
 
 
 #functions
