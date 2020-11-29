@@ -665,12 +665,12 @@ if [ -z "$RELEASE" ]; then
 	RELEASE=$($UNAME -r)
 	RELEASE=${RELEASE%%.*}
 fi
-case "$RELEASE" in
-	6|7|8)
-		[ -n "$SETEXT" ] || SETEXT=".tgz"
-		;;
-	9)
+case "$RELEASE/$EDGEBSD_ARCH" in
+	9/alpha|9/amd64|9/sparc64)
 		[ -n "$SETEXT" ] || SETEXT=".tar.xz"
+		;;
+	6/*|7/*|8/*|9/*)
+		[ -n "$SETEXT" ] || SETEXT=".tgz"
 		;;
 	*)
 		_error "$RELEASE: Unsupported release"
