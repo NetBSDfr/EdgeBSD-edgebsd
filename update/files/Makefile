@@ -44,6 +44,7 @@ dist:
 		$(PACKAGE)-$(VERSION)/src/edgebsd-update \
 		$(PACKAGE)-$(VERSION)/src/project.conf \
 		$(PACKAGE)-$(VERSION)/tests/Makefile \
+		$(PACKAGE)-$(VERSION)/tests/destdir/etc/mtree/set.base \
 		$(PACKAGE)-$(VERSION)/tests/shlint.sh \
 		$(PACKAGE)-$(VERSION)/tests/tests.sh \
 		$(PACKAGE)-$(VERSION)/tests/project.conf \
