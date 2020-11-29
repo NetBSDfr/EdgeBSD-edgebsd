@@ -121,7 +121,7 @@ _arch_evbarm_update_kernel()
 		_verify "$file"
 		if [ $? -ne 0 ]; then
 			_error "$EDGEBSD_KERNEL: Could not verify the kernel"
-			exit $?
+			return $?
 		fi
 	fi
 	#backup the current kernel
@@ -129,7 +129,7 @@ _arch_evbarm_update_kernel()
 		$CP -- "$DESTDIR/boot/kernel7.img" "$DESTDIR/boot/okernel7.img"
 		if [ $? -ne 0 ]; then
 			_error "$EDGEBSD_KERNEL: Could not backup the kernel"
-			exit $?
+			return $?
 		fi
 	fi
 	_info "Installing kernel ${EDGEBSD_KERNEL}..."
@@ -137,13 +137,13 @@ _arch_evbarm_update_kernel()
 		$TAR -xzpf - -C "$DESTDIR/boot"
 	if [ $? -ne 0 ]; then
 		_error "$EDGEBSD_KERNEL: Could not install the kernel"
-		exit $?
+		return $?
 	fi
 	_info "Renaming kernel ${EDGEBSD_KERNEL}..."
 	$DEBUG $MV -f -- "$DESTDIR/boot/netbsd.bin" "$DESTDIR/boot/kernel7.img"
 	if [ $? -ne 0 ]; then
 		_error "$EDGEBSD_KERNEL: Could not rename the kernel"
-		exit $?
+		return $?
 	fi
 	ret=$?
 	$UMOUNT "$DESTDIR/boot"
@@ -185,7 +185,7 @@ _arch_generic_update_kernel()
 		_verify "$file"
 		if [ $? -ne 0 ]; then
 			_error "$EDGEBSD_KERNEL: Could not verify the kernel"
-			exit $?
+			return $?
 		fi
 	fi
 	#backup the current kernel
@@ -193,7 +193,7 @@ _arch_generic_update_kernel()
 		$CP -- "$DESTDIR/netbsd.gz" "$DESTDIR/onetbsd.gz"
 		if [ $? -ne 0 ]; then
 			_error "$EDGEBSD_KERNEL: Could not backup the kernel"
-			exit $?
+			return $?
 		fi
 	fi
 	_info "Installing kernel ${EDGEBSD_KERNEL}..."
@@ -201,14 +201,15 @@ _arch_generic_update_kernel()
 		$TAR -xzpf - -C "$DESTDIR"
 	if [ $? -ne 0 ]; then
 		_error "$EDGEBSD_KERNEL: Could not install the kernel"
-		exit $?
+		return $?
 	fi
 	_info "Compressing kernel ${EDGEBSD_KERNEL}..."
 	$DEBUG $GZIP -f -- "$DESTDIR/netbsd"
 	if [ $? -ne 0 ]; then
 		_error "$EDGEBSD_KERNEL: Could not compress the kernel"
-		exit $?
+		return $?
 	fi
+	return 0
 }
 
 _arch_i386_update_bootloader()
@@ -747,6 +748,10 @@ if [ $KERNEL -ne 0 ]; then
 			res=2
 			;;
 	esac
+fi
+if [ $res -ne 0 ]; then
+	_error "Could not update the kernel"
+	exit $?
 fi
 
 _update_sets
