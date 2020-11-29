@@ -69,13 +69,14 @@ EDGEBSD_RELEASE=$($UNAME -r)
 EDGEBSD_RELEASE="EdgeBSD-${EDGEBSD_RELEASE%.*}"
 ETCMTREE="/etc/mtree"
 KERNEL=0
+[ -n "$TMPDIR" ] || TMPDIR="/tmp"
+MKTEMP_TEMPLATE="$TMPDIR/$PROGNAME-XXXXXX"
 MODULES=0
 NOOP=0
 PACKAGES=0
 RELEASE=
 SETEXT=
 SETS=
-[ -n "$TMPDIR" ] || TMPDIR="/tmp"
 UPDATE_ETC=0
 USRMDECBOOT="/usr/mdec/boot"
 USRMDECPREKERN="/usr/mdec/prekern"
@@ -217,7 +218,7 @@ _arch_generic_update_kernel()
 		fi
 	fi
 	#install the new kernel
-	tmpdir=$($MKTEMP -d "$TMPDIR/$PROGNAME-XXXXXX")
+	tmpdir=$($MKTEMP -d "$MKTEMP_TEMPLATE")
 	[ $? -eq 0 ]						|| return 2
 	_info "Installing kernel ${EDGEBSD_KERNEL}..."
 	_progress -f "$file" -p "$($PRINTF "%-7s " "$EDGEBSD_KERNEL")" \
@@ -401,7 +402,7 @@ _import_gpg_key()
 {
 	ret=0
 
-	tmpfile=$($MKTEMP "$TMPDIR/$PROGNAME-XXXXXX")
+	tmpfile=$($MKTEMP "$MKTEMP_TEMPLATE")
 	[ $? -eq 0 ]						|| return 2
 	_import_gpg_key_echo > "$tmpfile" &&
 	$NETPGPKEYS --import-key "$tmpfile" > "$DEVNULL"	|| ret=2
