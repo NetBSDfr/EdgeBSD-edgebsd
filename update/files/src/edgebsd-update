@@ -117,7 +117,7 @@ _arch_evbarm_update_kernel()
 	ret=0
 
 	#XXX assumes the Raspberry PI and DESTDIR=/
-	if ! $MOUNT "$DESTDIR/boot"; then
+	if ! $DEBUG $MOUNT "$DESTDIR/boot"; then
 		_error "$EDGEBSD_KERNEL: Could not mount the boot partition"
 		return $?
 	fi
@@ -133,7 +133,8 @@ _arch_evbarm_update_kernel()
 	fi
 	#backup the current kernel
 	if [ -f "$DESTDIR/boot/kernel7.img" ]; then
-		$CP -- "$DESTDIR/boot/kernel7.img" "$DESTDIR/boot/okernel7.img"
+		$DEBUG $CP -- "$DESTDIR/boot/kernel7.img" \
+			"$DESTDIR/boot/okernel7.img"
 		if [ $? -ne 0 ]; then
 			_error "$EDGEBSD_KERNEL: Could not backup the kernel"
 			return $?
@@ -153,7 +154,7 @@ _arch_evbarm_update_kernel()
 		return $?
 	fi
 	ret=$?
-	$UMOUNT "$DESTDIR/boot"
+	$DEBUG $UMOUNT "$DESTDIR/boot"
 	[ $? -ne 0 ] && _error "$EDGEBSD_KERNEL: Could not unmount the boot partition"
 	return $ret
 }
@@ -162,21 +163,21 @@ _arch_generic_update_bootloader()
 {
 	if [ -f "$DESTDIR$USRMDECBOOT" ]; then
 		if [ -f "$DESTDIR/altroot/boot" ]; then
-			$INSTALL -m 0444 "$DESTDIR$USRMDECBOOT" \
+			$DEBUG $INSTALL -m 0444 "$DESTDIR$USRMDECBOOT" \
 				"$DESTDIR/altroot/boot"		|| return 2
 		fi
 		if [ -f "$DESTDIR/boot" ]; then
-			$INSTALL -m 0444 "$DESTDIR$USRMDECBOOT" \
+			$DEBUG $INSTALL -m 0444 "$DESTDIR$USRMDECBOOT" \
 				"$DESTDIR/boot"			|| return 2
 		fi
 	fi
 	if [ -f "$DESTDIR$USRMDECPREKERN" ]; then
 		if [ -f "$DESTDIR/altroot/prekern" ]; then
-			$INSTALL -m 0444 "$DESTDIR$USRMDECPREKERN" \
+			$DEBUG $INSTALL -m 0444 "$DESTDIR$USRMDECPREKERN" \
 				"$DESTDIR/altroot/prekern"	|| return 2
 		fi
 		if [ -f "$DESTDIR/prekern" ]; then
-			$INSTALL -m 0444 "$DESTDIR$USRMDECPREKERN" \
+			$DEBUG $INSTALL -m 0444 "$DESTDIR$USRMDECPREKERN" \
 				"$DESTDIR/prekern"		|| return 2
 		fi
 	fi
@@ -196,7 +197,7 @@ _arch_generic_update_kernel()
 		fi
 	fi
 	#detect the kernel file booted
-	bootedfile=$($DEBUG $SYSCTL -n "machdep.booted_kernel" 2> "$DEVNULL")
+	bootedfile=$($SYSCTL -n "machdep.booted_kernel" 2> "$DEVNULL")
 	[ $? -eq 0 -a -n "$bootedfile" ] || bootedfile="/netbsd.gz"
 	bootedfile=${bootedfile#/}
 	#detect if a backup was booted
@@ -227,18 +228,19 @@ _arch_generic_update_kernel()
 	if [ $? -ne 0 ]; then
 		_error "$EDGEBSD_KERNEL: Could not install the kernel"
 		$DEBUG $RM -- "$tmpdir/netbsd"
-		$DEBUG $RMDIR -- "$tmpdir"
+		NOOP=0 $DEBUG $RMDIR -- "$tmpdir"
 		return $?
 	fi
 	if [ "${bootedfile%.gz}" != "$bootedfile" ]; then
 		#compress the kernel
 		_info "Compressing kernel ${EDGEBSD_KERNEL}..."
+		#XXX creates files even in dry-run
 		$DEBUG $GZIP -f -c -- "$tmpdir/netbsd" > "$tmpdir/$bootedfile" &&
 			$DEBUG $MV -- "$tmpdir/$bootedfile" "$tmpdir/netbsd"
 		if [ $? -ne 0 ]; then
 			_error "$EDGEBSD_KERNEL: Could not compress the kernel"
 			$DEBUG $RM -- "$tmpdir/netbsd" "$tmpdir/$bootedfile"
-			$DEBUG $RMDIR -- "$tmpdir"
+			NOOP=0 $DEBUG $RMDIR -- "$tmpdir"
 			return $?
 		fi
 	fi
@@ -250,10 +252,10 @@ _arch_generic_update_kernel()
 	if [ $? -ne 0 ]; then
 		_error "$EDGEBSD_KERNEL: Could not update the kernel"
 		$DEBUG $RM -- "$tmpdir/netbsd"
-		$DEBUG $RMDIR -- "$tmpdir"
+		NOOP=0 $DEBUG $RMDIR -- "$tmpdir"
 		return $?
 	fi
-	$DEBUG $RMDIR -- "$tmpdir"
+	NOOP=0 $DEBUG $RMDIR -- "$tmpdir"
 	return 0
 }
 
@@ -292,8 +294,9 @@ _arch_sparc64_update_kernel()
 _clean_kernel()
 {
 	if [ $KERNEL -ne 0 -a -n "${EDGEBSD_MIRROR##/*}" ]; then
-		$RM -- "kern-${EDGEBSD_KERNEL}${SETEXT}"
-		[ $VERIFY -ne 0 ] && $RM -- "kern-${EDGEBSD_KERNEL}${SETEXT}.sig"
+		$DEBUG $RM -- "kern-${EDGEBSD_KERNEL}${SETEXT}"
+		[ $VERIFY -ne 0 ] && $DEBUG $RM -- \
+			"kern-${EDGEBSD_KERNEL}${SETEXT}.sig"
 	fi
 }
 
@@ -304,8 +307,8 @@ _clean_sets()
 	[ -n "${EDGEBSD_MIRROR##/*}" ]				|| return
 	for set in $SETS; do
 		_info "Removing downloaded set ${set}..."
-		$RM -- "${set}${SETEXT}"
-		[ $VERIFY -ne 0 ] && $RM -- "${set}${SETEXT}.sig"
+		$DEBUG $RM -- "${set}${SETEXT}"
+		[ $VERIFY -ne 0 ] && $DEBUG $RM -- "${set}${SETEXT}.sig"
 	done
 }
 
@@ -314,7 +317,34 @@ _clean_sets()
 _debug()
 {
 	[ $VERBOSE -ge 3 ] && echo "$@" 1>&2
-	"$@"
+	[ $NOOP -ne 0 ] || "$@"
+}
+
+
+#detect_kernel
+_detect_kernel()
+{
+	kernel=$($UNAME -v)
+	kernel="${kernel##*(}"
+	echo "${kernel%)*}"
+}
+
+
+#detect_release
+_detect_release()
+{
+	release=$($UNAME -r)
+	echo "${release%%.*}"
+}
+
+
+#detect_sets
+_detect_sets()
+{
+	for i in "$DESTDIR$ETCMTREE/set."*; do
+		set="${i#$DESTDIR$ETCMTREE/set.}"
+		[ -z "$set" ] || echo "$set"
+	done
 }
 
 
@@ -325,7 +355,7 @@ _download()
 
 	$DEBUG $FTP "$EDGEBSD_PATH/$file"
 	res=$?
-	[ $res -eq 0 ] || $RM -- "$file"
+	[ $res -eq 0 ] || $DEBUG $RM -- "$file"
 	return $res
 }
 
@@ -381,9 +411,9 @@ _download_sets()
 	done
 	if [ $res -ne 0 -a -n "${EDGEBSD_MIRROR##/*}" ]; then
 		for set in $SETS; do
-			$RM -- "${set}${SETEXT}"
+			$DEBUG $RM -- "${set}${SETEXT}"
 			[ $VERIFY -eq 0 ] && continue
-			$RM -- "${set}${SETEXT}.sig"
+			$DEBUG $RM -- "${set}${SETEXT}.sig"
 		done
 	fi
 	return $res
@@ -406,7 +436,7 @@ _import_gpg_key()
 	tmpfile=$($MKTEMP "$MKTEMP_TEMPLATE")
 	[ $? -eq 0 ]						|| return 2
 	_import_gpg_key_echo > "$tmpfile" &&
-	$NETPGPKEYS --import-key "$tmpfile" > "$DEVNULL"	|| ret=2
+	$DEBUG $NETPGPKEYS --import-key "$tmpfile" > "$DEVNULL"	|| ret=2
 	$RM -- "$tmpfile"
 	return $ret
 }
@@ -571,9 +601,9 @@ _update_packages()
 	if [ $PACKAGES -ne 0 ]; then
 		_info "Updating the packages..."
 		if [ -n "$DESTDIR" ]; then
-			$PKGIN -y -c "$DESTDIR" full-upgrade
+			$DEBUG $PKGIN -y -c "$DESTDIR" full-upgrade
 		else
-			$PKGIN -y full-upgrade
+			$DEBUG $PKGIN -y full-upgrade
 		fi
 		return $?
 	fi
@@ -716,10 +746,7 @@ if [ $# -ne 0 ]; then
 fi
 
 #detect the release
-if [ -z "$RELEASE" ]; then
-	RELEASE=$($UNAME -r)
-	RELEASE=${RELEASE%%.*}
-fi
+[ -n "$RELEASE" ] || RELEASE=$(_detect_release)
 case "$RELEASE/$EDGEBSD_ARCH" in
 	9/alpha|9/amd64|9/sparc64)
 		[ -n "$SETEXT" ] || SETEXT=".tar.xz"
@@ -741,12 +768,7 @@ if [ $VERIFY -ne 0 ]; then
 fi
 
 #detect the sets to update
-if [ -z "$SETS" ]; then
-	for i in "$DESTDIR$ETCMTREE/set."*; do
-		set="${i#$DESTDIR$ETCMTREE/set.}"
-		[ -n "$set" ] && SETS="$SETS $set"
-	done
-fi
+[ -n "$SETS" ] || SETS=$(_detect_sets)
 
 if [ $MODULES -ne 0 ]; then
 	has_stand=0
@@ -762,12 +784,8 @@ else
 	EDGEBSD_MIRROR="/nonexistent"
 fi
 
-#detect the kernel
-if [ -z "$EDGEBSD_KERNEL" ]; then
-	EDGEBSD_KERNEL=$($UNAME -v)
-	EDGEBSD_KERNEL="${EDGEBSD_KERNEL##*(}"
-	EDGEBSD_KERNEL="${EDGEBSD_KERNEL%)*}"
-fi
+#detect and download the kernel
+[ -n "$EDGEBSD_KERNEL" ] || EDGEBSD_KERNEL=$(_detect_kernel)
 _download_kernel
 if [ $? -ne 0 ]; then
 	_error "$EDGEBSD_KERNEL: Could not download the kernel"
@@ -784,8 +802,6 @@ if [ $? -ne 0 ]; then
 	_error "Could not download the sets"
 	exit $?
 fi
-
-[ $NOOP -ne 0 ] && exit 0
 
 #install the kernel
 if [ $KERNEL -ne 0 ]; then
