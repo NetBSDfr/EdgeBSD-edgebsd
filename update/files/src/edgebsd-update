@@ -770,7 +770,7 @@ case "$EDGEBSD_VENDOR-$RELEASE/$EDGEBSD_ARCH" in
 		;;
 esac
 
-if "$EDGEBSD_VENDOR" = "EdgeBSD"; then
+if [ "$EDGEBSD_VENDOR" = "EdgeBSD" ]; then
 	if [ $VERIFY -ne 0 ]; then
 		#import the GPG key
 		_info "Importing the GPG key..."
