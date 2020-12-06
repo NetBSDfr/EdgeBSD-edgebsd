@@ -2,7 +2,7 @@
 
 PKGNAME=	edgebsd-update-${VERSION}
 VERSION=	9
-PKGREVISION=	14
+PKGREVISION=	15
 CATEGORIES=	edgebsd
 
 MAINTAINER=	khorben@edgebsd.org
@@ -11,6 +11,8 @@ COMMENT=	Update script for EdgeBSD
 LICENSE=	modified-bsd
 
 MAKE_FLAGS+=	PREFIX=${PREFIX:Q}
+
+RCD_SCRIPTS=	edgebsd-update
 
 TEST_TARGET=	tests
 

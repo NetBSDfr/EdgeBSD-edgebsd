@@ -1,0 +1,25 @@
+#!@RCD_SCRIPTS_SHELL@
+#
+# $NetBSD$
+#
+
+# PROVIDE: edgebsd-update
+# REQUIRE: mountcritremote
+# BEFORE: NETWORKING SERVERS
+
+$_rc_subr_loaded . /etc/rc.subr
+
+name="edgebsd-update"
+start_cmd="edgebsd_update_start"
+stop_cmd=":"
+
+edgebsd_update_start()
+{
+	EDGEBSD_UPDATE="@PREFIX@/sbin/edgebsd-update -S"
+	EDGEBSD_MIRROR="/var/cache/edgebsd-update"
+
+	[ ! -d "$EDGEBSD_MIRROR" ] || $EDGEBSD_UPDATE -M "$EDGEBSD_MIRROR"
+}
+
+load_rc_config $name
+run_rc_command "$1"
