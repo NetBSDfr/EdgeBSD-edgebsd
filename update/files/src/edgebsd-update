@@ -331,17 +331,20 @@ _detect_kernel()
 #detect_release
 _detect_release()
 {
-	EDGEBSD_RELEASE=$($UNAME -r)
-
-	case "$EDGEBSD_VENDOR" in
-		NetBSD)
-			EDGEBSD_RELEASE="$EDGEBSD_VENDOR-${EDGEBSD_RELEASE%_*}"
-			;;
-		*)
-			EDGEBSD_RELEASE="$EDGEBSD_VENDOR-${EDGEBSD_RELEASE%.*}"
-			;;
-	esac
-	echo "${EDGEBSD_RELEASE#$EDGEBSD_VENDOR-}"
+	if [ -n "$1" ]; then
+		EDGEBSD_RELEASE="$EDGEBSD_VENDOR-$1"
+	else
+		EDGEBSD_RELEASE=$($UNAME -r)
+		case "$EDGEBSD_VENDOR" in
+			NetBSD)
+				EDGEBSD_RELEASE="${EDGEBSD_RELEASE%_*}"
+				;;
+			*)
+				EDGEBSD_RELEASE="${EDGEBSD_RELEASE%.*}"
+				;;
+		esac
+		EDGEBSD_RELEASE="$EDGEBSD_VENDOR-$EDGEBSD_RELEASE"
+	fi
 }
 
 
@@ -753,8 +756,8 @@ if [ $# -ne 0 ]; then
 fi
 
 #detect the release
-[ -n "$RELEASE" ] || RELEASE=$(_detect_release)
-case "$EDGEBSD_VENDOR-$RELEASE/$EDGEBSD_ARCH" in
+_detect_release "$RELEASE"
+case "$EDGEBSD_RELEASE/$EDGEBSD_ARCH" in
 	EdgeBSD-9/alpha|EdgeBSD-9/amd64|EdgeBSD-9/sparc64|\
 		NetBSD-9.*/alpha|NetBSD-9.*/amd64|NetBSD-9.*/sparc64)
 		[ -n "$SETEXT" ] || SETEXT=".tar.xz"
