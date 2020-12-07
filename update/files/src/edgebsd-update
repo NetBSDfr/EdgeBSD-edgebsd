@@ -179,7 +179,7 @@ _arch_generic_update_bootloader()
 				"$DESTDIR/prekern"		|| return 2
 		fi
 	fi
-	#FIXME also use installboot(8) when appropriate
+	return 0
 }
 
 _arch_generic_update_kernel()
@@ -259,7 +259,8 @@ _arch_generic_update_kernel()
 
 _arch_i386_update_bootloader()
 {
-	_arch_generic_update_bootloader
+	_arch_generic_update_bootloader				|| return 2
+	#FIXME also use installboot(8) when appropriate
 }
 
 _arch_i386_update_kernel()
