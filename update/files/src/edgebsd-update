@@ -35,9 +35,12 @@ PROGNAME="edgebsd-update"
 CAT="/bin/cat"
 CP="/bin/cp -af"
 DEBUG="_debug"
+DUMPFS="/usr/sbin/dumpfs"
 FTP="/usr/bin/ftp -V"
+GREP="grep"
 GZIP="/usr/bin/gzip -9"
 INSTALL="/usr/bin/install"
+INSTALLBOOT="/usr/sbin/installboot"
 MKDIR="/bin/mkdir -p"
 MKTEMP="/usr/bin/mktemp"
 MOUNT="/sbin/mount"
@@ -51,14 +54,17 @@ PRINTF="printf"
 PROGRESS="/usr/bin/progress"
 RM="/bin/rm -f"
 RMDIR="/bin/rmdir"
+ROOTDEV=
 SYSCTL="/sbin/sysctl"
 TAR="/rescue/tar"
+TR="tr"
 UMOUNT="/sbin/umount"
 UNAME="/usr/bin/uname"
 ZCAT="/usr/bin/zcat"
 
 #settings
 BOOTLOADER=0
+BOOTXX="/usr/mdec/"
 DESTDIR=
 DEVNULL="/dev/null"
 EDGEBSD_ARCH=$($UNAME -m)
@@ -79,6 +85,7 @@ SETS=
 SYSCONFDIR="/etc"
 UPDATE_ETC=0
 USRMDECBOOT="/usr/mdec/boot"
+USRMDECBOOTXX="/usr/mdec/bootxx"
 USRMDECPREKERN="/usr/mdec/prekern"
 VERBOSE=1
 VERIFY=1
@@ -260,7 +267,33 @@ _arch_generic_update_kernel()
 _arch_i386_update_bootloader()
 {
 	_arch_generic_update_bootloader				|| return 2
-	#FIXME also use installboot(8) when appropriate
+	#XXX require the root device to be set
+	if [ -z "$ROOTDEV" ]; then
+		_error "Could not update the bootloader (root device not set)"
+		return 0
+	fi
+	#detect the underlying filesystem
+	filesystem=$($DUMPFS "$ROOTDEV" | $GREP '^format	')
+	if [ $? -ne 0 -o -z "$filesystem" ]; then
+		_error "$DESTDIR/: Could not detect the filesystem"
+		return $?
+	fi
+	filesystem=${filesystem#*	}
+	case "$filesystem" in
+		FFSv1|FFSv2)
+			filesystem=$(echo "$filesystem" | _tolower)
+			;;
+	esac
+	if [ ! -f "${USRMDECBOOTXX}_$filesystem" ]; then
+		_error "$filesystem: Unsupported filesystem for boot partition"
+		return $?
+	fi
+	$DEBUG $INSTALLBOOT "$ROOTDEV" "${USRMDECBOOTXX}_$filesystem"
+	if [ $? -eq 0 ]; then
+		_error "$ROOTDEV: Could not install the bootloader"
+		return $?
+	fi
+	return 0
 }
 
 _arch_i386_update_kernel()
@@ -560,6 +593,13 @@ _progress()
 		$DEBUG $cat -- "$filename" | "$@"
 	fi
 )}
+
+
+#tolower
+_tolower()
+{
+	$TR A-Z a-z
+}
 
 
 #update_bootloader
