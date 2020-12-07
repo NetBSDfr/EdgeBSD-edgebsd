@@ -40,8 +40,15 @@ _tests()
 
 	$DATE
 	echo
-	_tests_usage						|| ret=1
+	_tests_usage						|| ret=2
+	_tests_noop						|| ret=2
 	return $ret
+}
+
+_tests_noop()
+{
+	echo "$PROGNAME: Testing the update (dry-run)"
+	$DEBUG $EDGEBSD_UPDATE -vvv -n -S -D "../tests/destdir" 2>&1
 }
 
 _tests_usage()
