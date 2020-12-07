@@ -59,7 +59,7 @@ ZCAT="/usr/bin/zcat"
 
 #settings
 BOOTLOADER=0
-DESTDIR="/"
+DESTDIR=
 DEVNULL="/dev/null"
 EDGEBSD_ARCH=$($UNAME -m)
 EDGEBSD_KERNEL=
@@ -597,7 +597,7 @@ _update_configuration()
 			[ $res -eq 0 ] || return $res
 		fi
 		_info "Updating the configuration..."
-		$DEBUG $POSTINSTALL -s "$file" -d "$DESTDIR" fix > "$DEVNULL"
+		$DEBUG $POSTINSTALL -s "$file" -d "$DESTDIR/" fix > "$DEVNULL"
 		res=$?
 	fi
 	return $res
@@ -626,7 +626,7 @@ _update_sets()
 {
 	#update the relevant sets
 	_info "Updating the sets..."
-	$MKDIR -- "$DESTDIR"
+	$MKDIR -- "$DESTDIR/"
 	for set in $SETS; do
 		if [ "$set" = "etc" ]; then
 			UPDATE_ETC=1
@@ -642,7 +642,7 @@ _update_sets()
 			[ $res -eq 0 ]				|| return $res
 		fi
 		_progress -f "$file" -p "$($PRINTF "%-7s " "${set}")" \
-			$TAR -xzpf - -C "$DESTDIR"
+			$TAR -xzpf - -C "$DESTDIR/"
 		res=$?
 		[ $res -eq 0 ]					|| return $res
 		#also extract the modules to /altroot if relevant
