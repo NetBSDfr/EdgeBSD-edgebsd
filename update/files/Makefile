@@ -21,7 +21,7 @@ subdirs:
 		else $(MAKE); fi) || exit; done
 
 tests: all
-	cd tests && (if [ -n "$(OBJDIR)" ]; then $(MAKE) OBJDIR="$(OBJDIR)tests/" "$(OBJDIR)tests/shlint.log" "$(OBJDIR)tests/tests.log"; else $(MAKE) shlint.log tests.log; fi)
+	cd tests && (if [ -n "$(OBJDIR)" ]; then $(MAKE) OBJDIR="$(OBJDIR)tests/" "$(OBJDIR)tests/fixme.log" "$(OBJDIR)tests/shlint.log" "$(OBJDIR)tests/tests.log"; else $(MAKE) fixme.log shlint.log tests.log; fi)
 
 clean:
 	@for i in $(SUBDIRS); do (cd "$$i" && \
@@ -49,7 +49,12 @@ dist:
 		$(PACKAGE)-$(VERSION)/src/edgebsd-update \
 		$(PACKAGE)-$(VERSION)/src/project.conf \
 		$(PACKAGE)-$(VERSION)/tests/Makefile \
+		$(PACKAGE)-$(VERSION)/tests/destdir/boot \
 		$(PACKAGE)-$(VERSION)/tests/destdir/etc/mtree/set.base \
+		$(PACKAGE)-$(VERSION)/tests/destdir/prekern \
+		$(PACKAGE)-$(VERSION)/tests/destdir/usr/mdec/boot \
+		$(PACKAGE)-$(VERSION)/tests/destdir/usr/mdec/prekern \
+		$(PACKAGE)-$(VERSION)/tests/fixme.sh \
 		$(PACKAGE)-$(VERSION)/tests/shlint.sh \
 		$(PACKAGE)-$(VERSION)/tests/tests.sh \
 		$(PACKAGE)-$(VERSION)/tests/project.conf \
