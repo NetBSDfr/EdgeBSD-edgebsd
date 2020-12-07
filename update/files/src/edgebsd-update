@@ -353,6 +353,7 @@ _detect_release()
 _detect_sets()
 {
 	for i in "$DESTDIR$ETCMTREE/set."*; do
+		[ -f "$i" ]					|| continue
 		set="${i#$DESTDIR$ETCMTREE/set.}"
 		[ -z "$set" ] || echo "$set"
 	done
