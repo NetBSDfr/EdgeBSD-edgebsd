@@ -515,7 +515,7 @@ mEH+2rR/ZC0mmQ==
 #info
 _info()
 {
-	[ $VERBOSE -ge 2 ] && echo "$@"
+	[ $VERBOSE -lt 2 ] || echo "$@"
 }
 
 
