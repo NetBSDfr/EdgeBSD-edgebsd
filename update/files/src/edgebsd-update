@@ -113,7 +113,7 @@ _arch_amd64_update_kernel()
 _arch_evbarm_update_bootloader()
 {
 	#XXX assumes the Raspberry PI and DESTDIR=/
-	#FIXME replace the firmware content if available
+	#TODO replace the firmware content if available
 	return 0
 }
 
@@ -819,7 +819,7 @@ if [ "$EDGEBSD_VENDOR" = "EdgeBSD" ]; then
 	if [ $VERIFY -ne 0 ]; then
 		#import the GPG key
 		_info "Importing the GPG key..."
-		#FIXME does not work
+		#XXX does not work
 		_import_gpg_key					|| return 2
 	fi
 fi
