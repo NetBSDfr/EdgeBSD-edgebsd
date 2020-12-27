@@ -5,7 +5,7 @@
 
 # PROVIDE: edgebsd-update
 # REQUIRE: mountcritremote
-# BEFORE: NETWORKING SERVERS
+# BEFORE: SERVERS
 
 $_rc_subr_loaded . /etc/rc.subr
 
