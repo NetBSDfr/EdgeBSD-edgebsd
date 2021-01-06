@@ -165,55 +165,72 @@ _edgebsd_update()
 		return $?
 	fi
 
-	#install the kernel
-	res=0
+	#update the kernel
+	ret=0
+	clean_kernel=0
 	if [ $KERNEL -ne 0 ]; then
 		_info "Updating the kernel..."
 		case "$EDGEBSD_ARCH" in
 			amd64|evbarm|i386|sparc|sparc64)
 				"_arch_${EDGEBSD_ARCH}_update_kernel"
-				res=$?
+				ret=$?
+				[ $ret -eq 0 ] && clean_kernel=1
 				;;
 			*)
-				res=2
+				ret=2
 				;;
 		esac
 	fi
-	if [ $res -ne 0 ]; then
-		_error "Could not update the kernel"
-		return $?
+	[ $ret -eq 0 ] || _error "Could not update the kernel"
+
+	#update the sets
+	clean_sets=0
+	clean_sets_keep="etc"
+	if [ $ret -eq 0 ]; then
+		_update_sets
+		ret=$?
+		if [ $? -eq 0 ]; then
+			clean_sets=1
+		else
+			_error "Could not update the sets"
+		fi
 	fi
 
-	_update_sets
-	if [ $? -ne 0 ]; then
-		_error "Could not update the sets"
-		return $?
-	fi
-	_clean_sets "etc"
-
-	_update_configuration
-	if [ $? -ne 0 ]; then
-		_error "Could not update the configuration"
-		return $?
+	#update the configuration
+	if [ $ret -eq 0 ]; then
+		_update_configuration
+		ret=$?
+		if [ $ret -eq 0 ]; then
+			clean_sets_keep=
+		else
+			_error "Could not update the configuration"
+		fi
 	fi
 
-	_update_packages
-	if [ $? -ne 0 ]; then
-		_error "Could not update the packages"
-		return $?
+	#update the packages
+	if [ $ret -eq 0 ]; then
+		_update_packages
+		ret=$?
+		[ $ret -eq 0 ] || _error "Could not update the packages"
 	fi
 
-	_update_bootloader
-	if [ $? -ne 0 ]; then
-		_error "Could not update the bootloader"
-		return $?
+	#update the bootloader
+	if [ $ret -eq 0 ]; then
+		_update_bootloader
+		ret=$?
+		[ $? -eq 0 ] || _error "Could not update the bootloader"
 	fi
 
 	#cleanup
-	_clean_sets
-	_clean_kernel
+	[ $clean_sets -eq 1 ] && _clean_sets "$clean_sets_keep"
+	[ $clean_kernel -eq 1 ] && _clean_kernel
 
-	_info "Update successful."
+	if [ $ret -eq 0 ]; then
+		_info "Update successful."
+	else
+		_info "Some errors occurred."
+	fi
+	return $ret
 }
 
 
