@@ -578,7 +578,8 @@ _progress()
 				cat="$ZCAT"
 				;;
 			*)
-				exit 1
+				_progress_usage
+				return $?
 				;;
 		esac
 	done
@@ -593,6 +594,12 @@ _progress()
 		$DEBUG $cat -- "$filename" | "$@"
 	fi
 )}
+
+_progress_usage()
+{
+	echo "Usage: progress [-ez][-f filename][-p prefix] cmd [args...]" 1>&2
+	return 1
+}
 
 
 #tolower
