@@ -188,6 +188,7 @@ _edgebsd_update()
 		_error "Could not update the sets"
 		return $?
 	fi
+	_clean_sets "etc"
 
 	_update_configuration
 	if [ $res -ne 0 ]; then
@@ -452,8 +453,12 @@ _clean_kernel()
 #clean_sets
 _clean_sets()
 {
+	keep="$1"
+
 	[ -n "${EDGEBSD_MIRROR##/*}" ]				|| return
 	for set in $SETS; do
+		[ -n "$keep" -a "$keep" = "$set" ]		&& continue
+		[ -f "${set}${SETEXT}" ]			|| continue
 		_info "Removing downloaded set ${set}..."
 		$DEBUG $RM -- "${set}${SETEXT}"
 		[ $VERIFY -ne 0 ] && $DEBUG $RM -- "${set}${SETEXT}.sig"
