@@ -166,6 +166,7 @@ _edgebsd_update()
 	fi
 
 	#install the kernel
+	res=0
 	if [ $KERNEL -ne 0 ]; then
 		_info "Updating the kernel..."
 		case "$EDGEBSD_ARCH" in
@@ -184,14 +185,14 @@ _edgebsd_update()
 	fi
 
 	_update_sets
-	if [ $res -ne 0 ]; then
+	if [ $? -ne 0 ]; then
 		_error "Could not update the sets"
 		return $?
 	fi
 	_clean_sets "etc"
 
 	_update_configuration
-	if [ $res -ne 0 ]; then
+	if [ $? -ne 0 ]; then
 		_error "Could not update the configuration"
 		return $?
 	fi
