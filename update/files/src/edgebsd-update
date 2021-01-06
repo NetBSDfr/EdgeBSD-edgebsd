@@ -99,6 +99,122 @@ VERIFY_USERID="root@edgebsd.org"
 
 
 #functions
+#edgebsd_update
+_edgebsd_update()
+{
+	#detect the release
+	_detect_release "$RELEASE"
+	case "$EDGEBSD_RELEASE/$EDGEBSD_ARCH" in
+		EdgeBSD-9/alpha|EdgeBSD-9/amd64|EdgeBSD-9/sparc64|\
+			NetBSD-9.*/alpha|NetBSD-9.*/amd64|NetBSD-9.*/sparc64)
+			[ -n "$SETEXT" ] || SETEXT=".tar.xz"
+			;;
+		EdgeBSD-6/*|EdgeBSD-7/*|EdgeBSD-8/*|EdgeBSD-9/*|\
+			NetBSD-2.*|NetBSD-3.*|NetBSD-4.*|NetBSD-5.*|\
+			NetBSD-6.*/*|NetBSD-7.*/*|NetBSD-8.*/*|NetBSD-9.*/*)
+			[ -n "$SETEXT" ] || SETEXT=".tgz"
+			;;
+		*)
+			_error "$RELEASE: Unsupported $EDGEBSD_VENDOR release"
+			return $?
+			;;
+	esac
+
+	if [ "$EDGEBSD_VENDOR" = "EdgeBSD" ]; then
+		if [ $VERIFY -ne 0 ]; then
+			#import the GPG key
+			_info "Importing the GPG key..."
+			#XXX does not work
+			_import_gpg_key				|| return 2
+		fi
+	fi
+
+	#detect the sets to update
+	[ -n "$SETS" ] || SETS=$(_detect_sets)
+
+	if [ $MODULES -ne 0 ]; then
+		has_stand=0
+		for i in $SETS; do
+			[ "$i" = "stand" ] && has_stand=1
+		done
+		[ $has_stand -eq 0 ] && SETS="$SETS stand"
+	fi
+
+	if [ -z "$EDGEBSD_PATH" ]; then
+		EDGEBSD_PATH="$EDGEBSD_MIRROR/pub/$EDGEBSD_VENDOR/$EDGEBSD_RELEASE/$EDGEBSD_ARCH/binary/sets"
+	else
+		EDGEBSD_MIRROR="/nonexistent"
+	fi
+
+	#detect and download the kernel
+	[ -n "$EDGEBSD_KERNEL" ] || EDGEBSD_KERNEL=$(_detect_kernel)
+	_download_kernel
+	if [ $? -ne 0 ]; then
+		_error "$EDGEBSD_KERNEL: Could not download the kernel"
+		return $?
+	fi
+	_download_kernel_signature
+	if [ $? -ne 0 ]; then
+		_error "$EDGEBSD_KERNEL: Could not download the kernel signature"
+		return $?
+	fi
+
+	_download_sets
+	if [ $? -ne 0 ]; then
+		_error "Could not download the sets"
+		return $?
+	fi
+
+	#install the kernel
+	if [ $KERNEL -ne 0 ]; then
+		_info "Updating the kernel..."
+		case "$EDGEBSD_ARCH" in
+			amd64|evbarm|i386|sparc|sparc64)
+				"_arch_${EDGEBSD_ARCH}_update_kernel"
+				res=$?
+				;;
+			*)
+				res=2
+				;;
+		esac
+	fi
+	if [ $res -ne 0 ]; then
+		_error "Could not update the kernel"
+		return $?
+	fi
+
+	_update_sets
+	if [ $res -ne 0 ]; then
+		_error "Could not update the sets"
+		return $?
+	fi
+
+	_update_configuration
+	if [ $res -ne 0 ]; then
+		_error "Could not update the configuration"
+		return $?
+	fi
+
+	_update_packages
+	if [ $? -ne 0 ]; then
+		_error "Could not update the packages"
+		return $?
+	fi
+
+	_update_bootloader
+	if [ $? -ne 0 ]; then
+		_error "Could not update the bootloader"
+		return $?
+	fi
+
+	#cleanup
+	_clean_sets
+	_clean_kernel
+
+	_info "Update successful."
+}
+
+
 #architecture-specific
 _arch_amd64_update_bootloader()
 {
@@ -804,113 +920,4 @@ if [ $# -ne 0 ]; then
 	exit $?
 fi
 
-#detect the release
-_detect_release "$RELEASE"
-case "$EDGEBSD_RELEASE/$EDGEBSD_ARCH" in
-	EdgeBSD-9/alpha|EdgeBSD-9/amd64|EdgeBSD-9/sparc64|\
-		NetBSD-9.*/alpha|NetBSD-9.*/amd64|NetBSD-9.*/sparc64)
-		[ -n "$SETEXT" ] || SETEXT=".tar.xz"
-		;;
-	EdgeBSD-6/*|EdgeBSD-7/*|EdgeBSD-8/*|EdgeBSD-9/*|\
-		NetBSD-2.*|NetBSD-3.*|NetBSD-4.*|NetBSD-5.*|\
-		NetBSD-6.*/*|NetBSD-7.*/*|NetBSD-8.*/*|NetBSD-9.*/*)
-		[ -n "$SETEXT" ] || SETEXT=".tgz"
-		;;
-	*)
-		_error "$RELEASE: Unsupported $EDGEBSD_VENDOR release"
-		exit $?
-		;;
-esac
-
-if [ "$EDGEBSD_VENDOR" = "EdgeBSD" ]; then
-	if [ $VERIFY -ne 0 ]; then
-		#import the GPG key
-		_info "Importing the GPG key..."
-		#XXX does not work
-		_import_gpg_key					|| return 2
-	fi
-fi
-
-#detect the sets to update
-[ -n "$SETS" ] || SETS=$(_detect_sets)
-
-if [ $MODULES -ne 0 ]; then
-	has_stand=0
-	for i in $SETS; do
-		[ "$i" = "stand" ] && has_stand=1
-	done
-	[ $has_stand -eq 0 ] && SETS="$SETS stand"
-fi
-
-if [ -z "$EDGEBSD_PATH" ]; then
-	EDGEBSD_PATH="$EDGEBSD_MIRROR/pub/$EDGEBSD_VENDOR/$EDGEBSD_RELEASE/$EDGEBSD_ARCH/binary/sets"
-else
-	EDGEBSD_MIRROR="/nonexistent"
-fi
-
-#detect and download the kernel
-[ -n "$EDGEBSD_KERNEL" ] || EDGEBSD_KERNEL=$(_detect_kernel)
-_download_kernel
-if [ $? -ne 0 ]; then
-	_error "$EDGEBSD_KERNEL: Could not download the kernel"
-	exit $?
-fi
-_download_kernel_signature
-if [ $? -ne 0 ]; then
-	_error "$EDGEBSD_KERNEL: Could not download the kernel signature"
-	exit $?
-fi
-
-_download_sets
-if [ $? -ne 0 ]; then
-	_error "Could not download the sets"
-	exit $?
-fi
-
-#install the kernel
-if [ $KERNEL -ne 0 ]; then
-	_info "Updating the kernel..."
-	case "$EDGEBSD_ARCH" in
-		amd64|evbarm|i386|sparc|sparc64)
-			"_arch_${EDGEBSD_ARCH}_update_kernel"
-			res=$?
-			;;
-		*)
-			res=2
-			;;
-	esac
-fi
-if [ $res -ne 0 ]; then
-	_error "Could not update the kernel"
-	exit $?
-fi
-
-_update_sets
-if [ $res -ne 0 ]; then
-	_error "Could not update the sets"
-	exit $?
-fi
-
-_update_configuration
-if [ $res -ne 0 ]; then
-	_error "Could not update the configuration"
-	exit $?
-fi
-
-_update_packages
-if [ $? -ne 0 ]; then
-	_error "Could not update the packages"
-	exit $?
-fi
-
-_update_bootloader
-if [ $? -ne 0 ]; then
-	_error "Could not update the bootloader"
-	exit $?
-fi
-
-#cleanup
-_clean_sets
-_clean_kernel
-
-_info "Update successful."
+_edgebsd_update
