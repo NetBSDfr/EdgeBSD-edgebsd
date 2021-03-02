@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="iso-8859-15"?>
+<!-- $Id$ -->
+<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd" [
+	<!ENTITY firstname "Pierre">
+	<!ENTITY surname   "Pronchery">
+	<!ENTITY email     "khorben@edgebsd.org">
+	<!ENTITY section   "8">
+	<!ENTITY package   "EdgeBSD NVMM">
+	<!ENTITY name      "nvmm-xl">
+	<!ENTITY title     "EdgeBSD documentation">
+	<!ENTITY purpose   "Manages Virtual Machine instances with NVMM">
+]>
+<refentry>
+	<refentryinfo>
+		<title>&title;</title>
+		<productname>&package;</productname>
+		<authorgroup>
+			<author>
+				<firstname>&firstname;</firstname>
+				<surname>&surname;</surname>
+				<contrib>Code and documentation.</contrib>
+				<address>
+					<email>&email;</email>
+				</address>
+			</author>
+		</authorgroup>
+		<copyright>
+			<year>2021</year>
+			<holder>&firstname; &surname; &lt;&email;&gt;</holder>
+		</copyright>
+		<legalnotice>
+			<para>This manual page was written for the EdgeBSD project (and may be
+				used by others).</para>
+			<para>Permission is granted to copy, distribute and/or modify this
+				document under the terms of the GNU General Public License,
+				Version 3 as published by the Free Software Foundation.</para>
+		</legalnotice>
+	</refentryinfo>
+	<refmeta>
+		<refentrytitle>&name;</refentrytitle>
+		<manvolnum>&section;</manvolnum>
+	</refmeta>
+	<refnamediv>
+		<refname>&name;</refname>
+		<refpurpose>&purpose;</refpurpose>
+	</refnamediv>
+	<refsynopsisdiv>
+		<cmdsynopsis>
+			<command>&name;</command> console
+			<replaceable> domain</replaceable>
+		</cmdsynopsis>
+		<cmdsynopsis>
+			<command>&name;</command> create
+			<arg choice="opt"><option>-c</option></arg>
+			<replaceable> domain</replaceable>
+		</cmdsynopsis>
+		<cmdsynopsis>
+			<command>&name;</command> destroy
+			<replaceable> domain</replaceable>
+		</cmdsynopsis>
+		<cmdsynopsis>
+			<command>&name;</command> list	
+		</cmdsynopsis>
+		<cmdsynopsis>
+			<command>&name;</command> shutdown
+			<arg choice="opt"><option>-F</option></arg>
+			<replaceable> domain</replaceable>
+		</cmdsynopsis>
+	</refsynopsisdiv>
+	<refsect1 id="description">
+		<title>Description</title>
+		<para>
+			&name; manages Virtual Machine instances with NVMM.
+		</para>
+	</refsect1>
+	<refsect1 id="options">
+		<title>Options</title>
+		<para>The following commands are available:</para>
+		<variablelist>
+			<varlistentry>
+				<term><option>create</option></term>
+				<listitem>
+					<para></para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
+				<term><option>console</option></term>
+				<listitem>
+					<para></para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
+				<term><option>destroy</option></term>
+				<listitem>
+					<para></para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
+				<term><option>list</option></term>
+				<listitem>
+					<para></para>
+				</listitem>
+			</varlistentry>
+			<varlistentry>
+				<term><option>shutdown</option></term>
+				<listitem>
+					<para></para>
+				</listitem>
+			</varlistentry>
+		</variablelist>
+	</refsect1>
+	<refsect1 id="examples">
+		<title>Examples</title>
+		<para>To start a Virtual Machine instance:</para>
+			<screen># &name; create /usr/pkg/etc/nvmm/guest-vm0</screen>
+			<para>To attach the console for the
+				<filename>guest-vm0</filename> Virtual Machine
+				instance:</para>
+		<screen># &name; console guest-vm0</screen>
+	</refsect1>
+	<refsect1 id="bugs">
+		<title>Bugs</title>
+		<para>Issues can be reported on the "edgebsd-developers" mailing-list for the
+			EdgeBSD Project, as documented at <ulink
+				url="https://lists.edgebsd.org/#edgebsd-developers"/>.</para>
+	</refsect1>
+	<refsect1 id="see_also">
+		<title>See also</title>
+		<para>
+			<citerefentry>
+				<refentrytitle>nvmm</refentrytitle>
+				<manvolnum>4</manvolnum>
+			</citerefentry>,
+			<citerefentry>
+				<refentrytitle>nvmmctl</refentrytitle>
+				<manvolnum>8</manvolnum>
+			</citerefentry>,
+			<citerefentry>
+				<refentrytitle>qemu</refentrytitle>
+				<manvolnum>1</manvolnum>
+			</citerefentry>,
+			<citerefentry>
+				<refentrytitle>screen</refentrytitle>
+				<manvolnum>1</manvolnum>
+			</citerefentry>,
+			<citerefentry>
+				<refentrytitle>xl</refentrytitle>
+				<manvolnum>8</manvolnum>
+			</citerefentry>
+		</para>
+		<refsect2>
+			<title>Additional resources</title>
+			<para>More information can be found on the project page at <ulink
+					url="https://www.edgebsd.org/"/>.</para>
+		</refsect2>
+	</refsect1>
+</refentry>
+<!-- vim: set noet ts=1 sw=1 sts=1 tw=80: -->

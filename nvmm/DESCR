@@ -1,0 +1,3 @@
+Helper package to better support NVMM on EdgeBSD.
+
+It is inspired from Xen's xl(8) binary, and meant to be similar in its use.

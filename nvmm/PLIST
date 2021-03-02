@@ -1,0 +1,4 @@
+@comment $NetBSD$
+man/html8/nvmm-xl.html
+man/man8/nvmm-xl.8
+sbin/nvmm-xl
