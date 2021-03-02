@@ -9,7 +9,7 @@ HOMEPAGE=	https://www.edgebsd.org/
 COMMENT=	NVMM support for EdgeBSD
 LICENSE=	modified-bsd
 
-ONLY_FOR_PLATFORM=	NetBSD-*.*-x86_64
+ONLY_FOR_PLATFORM=	NetBSD-*-x86_64
 
 MAKE_FLAGS+=	PREFIX=${PREFIX:Q}
 
