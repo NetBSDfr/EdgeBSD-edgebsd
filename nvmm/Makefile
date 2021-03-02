@@ -17,8 +17,8 @@ FILES_SUBST+=	PREFIX=${PREFIX}
 
 TEST_TARGET=	tests
 
-DEPENDS+=	qemu-*:../../emulators/qemu
-DEPENDS+=	screen-*:../../misc/screen
+DEPENDS+=	qemu-[0-9]*:../../emulators/qemu
+DEPENDS+=	screen-[0-9]*:../../misc/screen
 
 .include "../../mk/bsd.prefs.mk"
 
