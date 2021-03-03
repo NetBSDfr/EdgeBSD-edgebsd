@@ -1,7 +1,7 @@
 PACKAGE	= edgebsd-nvmm
 VERSION	= 9
 VENDOR	= EdgeBSD
-SUBDIRS	= doc src tests
+SUBDIRS	= doc src tests tools
 TARGETS	= tests
 RM	= rm -f
 LN	= ln -f
@@ -46,13 +46,16 @@ dist:
 		$(PACKAGE)-$(VERSION)/doc/manual.css.xml \
 		$(PACKAGE)-$(VERSION)/doc/project.conf \
 		$(PACKAGE)-$(VERSION)/src/Makefile \
-		$(PACKAGE)-$(VERSION)/src/nvmm-xl \
+		$(PACKAGE)-$(VERSION)/src/nvmm-xl.in \
 		$(PACKAGE)-$(VERSION)/src/project.conf \
 		$(PACKAGE)-$(VERSION)/tests/Makefile \
 		$(PACKAGE)-$(VERSION)/tests/fixme.sh \
 		$(PACKAGE)-$(VERSION)/tests/shlint.sh \
 		$(PACKAGE)-$(VERSION)/tests/tests.sh \
 		$(PACKAGE)-$(VERSION)/tests/project.conf \
+		$(PACKAGE)-$(VERSION)/tools/Makefile \
+		$(PACKAGE)-$(VERSION)/tools/subst.sh \
+		$(PACKAGE)-$(VERSION)/tools/project.conf \
 		$(PACKAGE)-$(VERSION)/Makefile \
 		$(PACKAGE)-$(VERSION)/README.md \
 		$(PACKAGE)-$(VERSION)/config.sh \

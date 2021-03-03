@@ -37,7 +37,9 @@ QEMU="qemu-system-x86_64"
 SCREEN="screen"
 #settings
 DEVNULL="/dev/null"
+PREFIX="@PREFIX@"
 PROGNAME="nvmm-xl"
+SYSCONFDIR="@SYSCONFDIR@"
 
 #load local settings
 [ -f "$SYSCONFDIR/nvmm/$PROGNAME.conf" ] &&
