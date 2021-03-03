@@ -75,7 +75,7 @@ _nvmm_xl()
 	while getopts "O:" name; do
 		case "$name" in
 			O)
-				eval "${OPTARG%%=*}"="${OPTARG#*}"
+				eval "${OPTARG%%=*}"="${OPTARG#*=}"
 				;;
 			*)
 				_usage
