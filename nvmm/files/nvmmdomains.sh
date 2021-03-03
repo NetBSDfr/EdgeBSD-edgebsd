@@ -10,19 +10,19 @@
 # nvmmdomains_config	This optional variable is a format string that
 #			represents the path to the configuration file for
 #			each domain.  "%s" is substituted with the name of
-#			the domain. The default is "@PKG_SYSCONFDIR@/%s".
+#			the domain. The default is "@PKG_SYSCONFDIR@/nvmm/%s".
 #
 # nvmmdomains_prehook	This optional variable is a format string that
 #			represents the command to run, if it exists, before
 #			starting each domain.  "%s" is substituted with the
 #			name of the domain.  The default is
-#			"@PKG_SYSCONFDIR@/%s-pre".
+#			"@PKG_SYSCONFDIR@/nvmm/%s-pre".
 #
 # nvmmdomains_posthook	This optional variable is a format string that
 #			represents the command to run, if it exists, after
 #			stopping each domain.  "%s" is substituted with the
 #			name of the domain.  The default is
-#			"@PKG_SYSCONFDIR@/%s-post".
+#			"@PKG_SYSCONFDIR@/nvmm/%s-post".
 #
 
 $_rc_subr_loaded . /etc/rc.subr
