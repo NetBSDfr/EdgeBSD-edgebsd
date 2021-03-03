@@ -32,6 +32,7 @@
 CAT="cat"
 DEBUG=
 MKDIR="mkdir"
+NC="nc"
 NVMMCTL="/usr/sbin/nvmmctl"
 QEMU="qemu-system-x86_64"
 SCREEN="screen"
