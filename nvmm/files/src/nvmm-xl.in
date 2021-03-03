@@ -120,7 +120,7 @@ _nvmm_xl_console()
 	while getopts "" name; do
 		case "$name" in
 			*)
-				_usage "console $name: Unsupported option"
+				_usage
 				return $?
 				;;
 		esac
@@ -151,8 +151,8 @@ _nvmm_xl_create()
 	while getopts "c" name; do
 		case "$name" in
 			*)
-				_usage "create $name: Unsupported option"
-				return 1
+				_usage
+				return $?
 				;;
 		esac
 	done
@@ -202,8 +202,8 @@ _nvmm_xl_destroy()
 	while getopts "" name; do
 		case "$name" in
 			*)
-				_usage "destroy $name: Unsupported option"
-				return 1
+				_usage
+				return $?
 				;;
 		esac
 	done
@@ -242,8 +242,8 @@ _nvmm_xl_shutdown()
 				fallback=1
 				;;
 			*)
-				_usage "shutdown $name: Unsupported option"
-				return 1
+				_usage
+				return $?
 				;;
 		esac
 	done
