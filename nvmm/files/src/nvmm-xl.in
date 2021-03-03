@@ -173,7 +173,7 @@ _nvmm_xl_create()
 		_error "$filename: Domain not configured"
 		return $?
 	fi
-	$MKDIR -p -m 0700 "${socket%/*}"
+	$DEBUG $MKDIR -p -m 0700 "${socket%/*}"
 	if [ $? -ne 0 ]; then
 		_error "$socket: Could not create the socket"
 		return $?
