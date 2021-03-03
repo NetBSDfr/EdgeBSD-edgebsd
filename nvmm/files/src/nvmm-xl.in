@@ -34,7 +34,7 @@ DEBUG=
 MKDIR="mkdir"
 NC="nc"
 NVMMCTL="/usr/sbin/nvmmctl"
-QEMU="qemu-system-x86_64 -nachine accel=nvmm -nographic"
+QEMU="@BINDIR@/qemu-system-x86_64 -machine accel=nvmm -nographic"
 SCREEN="screen"
 #settings
 DEVNULL="/dev/null"
