@@ -2,6 +2,7 @@
 
 PKGNAME=	edgebsd-nvmm-${VERSION}
 VERSION=	9
+PKGREVISION=	1
 CATEGORIES=	edgebsd
 
 MAINTAINER=	khorben@edgebsd.org
@@ -11,6 +12,7 @@ LICENSE=	modified-bsd
 
 ONLY_FOR_PLATFORM=	NetBSD-*-x86_64
 
+MAKE_FLAGS+=	DESTDIR=${DESTDIR:Q}
 MAKE_FLAGS+=	PREFIX=${PREFIX:Q}
 
 RCD_SCRIPTS=	nvmmdomains
