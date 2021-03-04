@@ -148,8 +148,12 @@ _nvmm_xl_console()
 #nvmm_xl_create
 _nvmm_xl_create()
 {
+	console=0
 	while getopts "c" name; do
 		case "$name" in
+			c)
+				console=1
+				;;
 			*)
 				_usage
 				return $?
