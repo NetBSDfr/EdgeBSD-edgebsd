@@ -43,7 +43,7 @@ PROGNAME="nvmm-xl"
 RUNDIR="/var/run/nvmm"
 SCREENDIR="/tmp/screens"
 SYSCONFDIR="@SYSCONFDIR@"
-[ -n "$USER" ] || USER="root"
+USER="$(id -un)"
 
 #load local settings
 [ -f "$SYSCONFDIR/nvmm/$PROGNAME.conf" ] &&
