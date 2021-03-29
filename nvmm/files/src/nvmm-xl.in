@@ -34,7 +34,7 @@ DEBUG=
 MKDIR="mkdir"
 NC="nc"
 NVMMCTL="/usr/sbin/nvmmctl"
-QEMU="@BINDIR@/qemu-system-x86_64 -machine accel=nvmm -nographic"
+QEMU="@BINDIR@/qemu-system-x86_64 -nographic"
 SCREEN="screen"
 #settings
 DEVNULL="/dev/null"
@@ -166,17 +166,66 @@ _nvmm_xl_create()
 		return $?
 	fi
 	filename="$1"
-	#XXX obtain from the configuration file
-	domain="${filename##*/}"
-	session="_nvmm-$domain"
-	socket="$RUNDIR/$domain"
-	screen_args=
-	[ $console -eq 0 ] && screen_args="-d -m"
 
 	if [ ! -f "$filename" ]; then
 		_error "$filename: Domain not configured"
 		return $?
 	fi
+
+	domain="${filename##*/}"
+	lineno=0
+	section=
+	#variables
+	qemu_machine="accel=nvmm"
+	qemu_memory="128M"
+	qemu_vcpus="1"
+	while read line; do
+		lineno=$((lineno + 1))
+		case "$line" in
+			"#"*)
+				;;
+			"["*"]")
+				section="${line#?}"
+				section="${section%?}"
+				;;
+			*=*)
+				variable="${line%%=*}"
+				value="${line#*=}"
+				case "$section::$variable" in
+					"::machine")
+						qemu_machine="$value"
+						;;
+					"::memory")
+						qemu_memory="$value"
+						;;
+					"::name")
+						#FIXME validate (no "/")
+						domain="$value"
+						;;
+					"::vcpus")
+						qemu_vcpus="$value"
+						;;
+					"::args")
+						qemu_args="$value"
+						;;
+					*)
+						_error "$section::$variable: Unknown variable"
+						return $?
+						;;
+				esac
+				;;
+			*)
+				_error "$filename:$lineno: Parse error"
+				return $?
+				;;
+		esac
+	done < "$filename"
+
+	session="_nvmm-$domain"
+	socket="$RUNDIR/$domain"
+	screen_args=
+	[ $console -eq 0 ] && screen_args="-d -m"
+
 	$DEBUG $MKDIR -p -m 0700 "${socket%/*}"
 	if [ $? -ne 0 ]; then
 		_error "$socket: Could not create the socket"
@@ -186,16 +235,12 @@ _nvmm_xl_create()
 		_error "$domain: Virtual Machine already running"
 		return $?
 	fi
-	qemu_args="$($CAT -- "$filename")"
-	if [ $? -ne 0 ]; then
-		_error "$filename: Could not read the configuration"
-		return $?
-	fi
 	$DEBUG $SCREEN -S "$session" $screen_args \
-		$QEMU -chardev stdio,id=s1,signal=off \
+		$QEMU -machine "$qemu_machine" -chardev stdio,id=s1,signal=off \
 		-serial none -device isa-serial,chardev=s1 \
 		-chardev "socket,id=mon0,path=$socket,server,nowait" \
 		-mon "chardev=mon0,mode=readline" \
+		-name "$domain" -m "$qemu_memory" -smp "$qemu_vcpus" \
 		$qemu_args
 }
 
