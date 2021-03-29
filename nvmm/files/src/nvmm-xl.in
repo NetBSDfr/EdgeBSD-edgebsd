@@ -35,7 +35,7 @@ DEBUG=
 MKDIR="mkdir"
 NC="nc"
 NVMMCTL="/usr/sbin/nvmmctl"
-QEMU="@BINDIR@/qemu-system-$ARCH -nographic"
+QEMU="@BINDIR@/qemu-system-$ARCH"
 SCREEN="screen"
 #settings
 DEVNULL="/dev/null"
@@ -197,7 +197,7 @@ _nvmm_xl_create()
 		return $?
 	fi
 	$DEBUG $SCREEN -S "$session" $screen_args \
-		$QEMU -name "$domain" -machine "$qemu_machine" \
+		$QEMU -name "$domain" -machine "$qemu_machine" -nographic \
 		-chardev stdio,id=s1,signal=off \
 		-serial none -device "isa-serial,chardev=s1" \
 		-chardev "socket,id=mon0,path=$socket,server,nowait" \
