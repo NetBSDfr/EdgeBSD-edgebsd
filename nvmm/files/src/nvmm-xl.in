@@ -38,9 +38,11 @@ NVMMCTL="/usr/sbin/nvmmctl"
 QEMU="@BINDIR@/qemu-system-$ARCH"
 SCREEN="screen"
 #settings
+CHROOTDIR=
 DEVNULL="/dev/null"
 PREFIX="@PREFIX@"
 PROGNAME="nvmm-xl"
+RUNAS=
 RUNDIR="/var/run/nvmm"
 SCREENDIR="/tmp/screens"
 SYSCONFDIR="@SYSCONFDIR@"
@@ -177,6 +179,8 @@ _nvmm_xl_create()
 	section=
 	#variables
 	qemu_args=
+	[ -n "$CHROOTDIR" ] && qemu_args="$qemu_args -chroot $CHROOTDIR"
+	[ -n "$RUNAS" ] && qemu_args="$qemu_args -runas $RUNAS"
 	qemu_machine="accel=nvmm"
 	qemu_memory="128M"
 	qemu_vcpus="1"
@@ -243,9 +247,6 @@ _create_parse()
 						;;
 					"::ramdisk")
 						qemu_args="$qemu_args -initrd $value"
-						;;
-					"::user")
-						qemu_args="$qemu_args -runas $value"
 						;;
 					"::vcpus")
 						qemu_vcpus="$value"
