@@ -29,12 +29,13 @@
 
 #variables
 #executables
+ARCH=$(uname -p)
 CAT="cat"
 DEBUG=
 MKDIR="mkdir"
 NC="nc"
 NVMMCTL="/usr/sbin/nvmmctl"
-QEMU="@BINDIR@/qemu-system-x86_64 -nographic"
+QEMU="@BINDIR@/qemu-system-$ARCH -nographic"
 SCREEN="screen"
 #settings
 DEVNULL="/dev/null"
