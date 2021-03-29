@@ -7,6 +7,9 @@
 # nvmmdomains		This required variable is a whitespace-separated
 #			list of domains, e.g., nvmmdomains="dom1 dom2 dom3".
 #
+# nvmmdomains_chrootdir	This optional variable is a path to a directory to run
+#			qemu in a chroot.
+#
 # nvmmdomains_config	This optional variable is a format string that
 #			represents the path to the configuration file for
 #			each domain.  "%s" is substituted with the name of
@@ -23,6 +26,9 @@
 #			stopping each domain.  "%s" is substituted with the
 #			name of the domain.  The default is
 #			"@PKG_SYSCONFDIR@/nvmm/%s-post".
+#
+# nvmmdomains_user	This optional variable is a username for qemu to drop
+#			privileges to.
 #
 
 $_rc_subr_loaded . /etc/rc.subr
@@ -61,7 +67,10 @@ nvmmdomains_start()
 		if [ -n "${nvmmdomains_config}" ]; then
 			file=`printf "${nvmmdomains_config}" $domain`
 			if [ -f "$file" ]; then
-				${ctl_command} create "$file"
+				${ctl_command} \
+					-O CHROOTDIR="$nvmmdomains_chrootdir" \
+					-O RUNAS="$nvmmdomains_user" \
+					create "$file"
 			fi
 		fi
 	done
