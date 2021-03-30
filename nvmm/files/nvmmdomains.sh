@@ -67,10 +67,10 @@ nvmmdomains_start()
 		if [ -n "${nvmmdomains_config}" ]; then
 			file=`printf "${nvmmdomains_config}" $domain`
 			if [ -f "$file" ]; then
-				${ctl_command} \
+				${ctl_command} create \
 					-O CHROOTDIR="$nvmmdomains_chrootdir" \
 					-O RUNAS="$nvmmdomains_user" \
-					create "$file"
+					"$file"
 			fi
 		fi
 	done

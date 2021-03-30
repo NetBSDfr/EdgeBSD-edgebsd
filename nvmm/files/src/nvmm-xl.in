@@ -75,17 +75,6 @@ _error()
 #nvmm_xl
 _nvmm_xl()
 {
-	while getopts "O:" name; do
-		case "$name" in
-			O)
-				eval "${OPTARG%%=*}"="${OPTARG#*=}"
-				;;
-			*)
-				_usage
-				return $?
-				;;
-		esac
-	done
 	shift $((OPTIND - 1))
 	if [ $# -eq 0 ]; then
 		_usage
@@ -120,8 +109,11 @@ _nvmm_xl_command()
 #nvmm_xl_console
 _nvmm_xl_console()
 {
-	while getopts "" name; do
+	while getopts "O:" name; do
 		case "$name" in
+			O)
+				eval "${OPTARG%%=*}"="${OPTARG#*=}"
+				;;
 			*)
 				_usage
 				return $?
@@ -152,10 +144,13 @@ _nvmm_xl_console()
 _nvmm_xl_create()
 {
 	console=0
-	while getopts "c" name; do
+	while getopts "cO:" name; do
 		case "$name" in
 			c)
 				console=1
+				;;
+			O)
+				eval "${OPTARG%%=*}"="${OPTARG#*=}"
 				;;
 			*)
 				_usage
@@ -269,8 +264,11 @@ _create_parse()
 #nvmm_xl_destroy
 _nvmm_xl_destroy()
 {
-	while getopts "" name; do
+	while getopts "O:" name; do
 		case "$name" in
+			O)
+				eval "${OPTARG%%=*}"="${OPTARG#*=}"
+				;;
 			*)
 				_usage
 				return $?
@@ -305,11 +303,14 @@ _nvmm_xl_list()
 _nvmm_xl_shutdown()
 {
 	fallback=0
-	while getopts "F" name; do
+	while getopts "FO:" name; do
 		case "$name" in
 			F)
 				#XXX implement
 				fallback=1
+				;;
+			O)
+				eval "${OPTARG%%=*}"="${OPTARG#*=}"
 				;;
 			*)
 				_usage
