@@ -7,7 +7,7 @@
 # REQUIRE: mountcritremote
 # BEFORE: SERVERS
 
-$_rc_subr_loaded . /etc/rc.subr
+$_rc_subr_loaded . @SYSCONFBASE@/rc.subr
 
 name="edgebsd-update"
 start_cmd="edgebsd_update_start"

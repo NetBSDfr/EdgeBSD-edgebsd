@@ -31,7 +31,7 @@
 #			privileges to.
 #
 
-$_rc_subr_loaded . /etc/rc.subr
+$_rc_subr_loaded . @SYSCONFBASE@/rc.subr
 
 name="nvmmdomains"
 ctl_command="@PREFIX@/sbin/nvmm-xl"
