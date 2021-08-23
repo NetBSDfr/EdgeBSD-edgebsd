@@ -44,6 +44,7 @@ dist:
 		$(PACKAGE)-$(VERSION)/doc/edgebsd-tls.css.xml \
 		$(PACKAGE)-$(VERSION)/doc/edgebsd-tls.xml \
 		$(PACKAGE)-$(VERSION)/doc/manual.css.xml \
+		$(PACKAGE)-$(VERSION)/doc/openssl.cnf \
 		$(PACKAGE)-$(VERSION)/doc/project.conf \
 		$(PACKAGE)-$(VERSION)/src/Makefile \
 		$(PACKAGE)-$(VERSION)/src/edgebsd-tls.in \

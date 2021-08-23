@@ -1,7 +1,10 @@
-TARGETS	= $(OBJDIR)edgebsd-tls.8 $(OBJDIR)edgebsd-tls.html
 OBJDIR	=
 PREFIX	= /Users/khorben/opt/DeforaOS
 DESTDIR	=
+MKDIR	= mkdir -m 0755 -p
+INSTALL	= install
+RM	= rm -f
+TARGETS	= $(OBJDIR)edgebsd-tls.8 $(OBJDIR)edgebsd-tls.html
 RM	= rm -f
 LN	= ln -f
 MKDIR	= mkdir -m 0755 -p
@@ -26,9 +29,12 @@ distclean: clean
 install: all
 	./docbook.sh -P "$(DESTDIR)$(PREFIX)" -i -- "$(OBJDIR)edgebsd-tls.8"
 	./docbook.sh -P "$(DESTDIR)$(PREFIX)" -i -- "$(OBJDIR)edgebsd-tls.html"
+	$(MKDIR) $(DESTDIR)$(PREFIX)/share/doc/edgebsd-tls
+	$(INSTALL) -m 0644 openssl.cnf $(DESTDIR)$(PREFIX)/share/doc/edgebsd-tls/openssl.cnf
 
 uninstall:
 	./docbook.sh -P "$(DESTDIR)$(PREFIX)" -u -- "edgebsd-tls.8"
 	./docbook.sh -P "$(DESTDIR)$(PREFIX)" -u -- "edgebsd-tls.html"
+	$(RM) -- $(DESTDIR)$(PREFIX)/share/doc/edgebsd-tls/openssl.cnf
 
 .PHONY: all clean distclean install uninstall
