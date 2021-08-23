@@ -1,0 +1,375 @@
+#!/bin/sh
+#Copyright (c) 2021 Pierre Pronchery <khorben@edgebsd.org>
+#
+#This code is derived from software contributed to the EdgeBSD Project
+#by Pierre Pronchery <khorben@edgebsd.org>
+#
+#Redistribution and use in source and binary forms, with or without
+#modification, are permitted provided that the following conditions
+#are met:
+#1. Redistributions of source code must retain the above copyright
+#   notice, this list of conditions and the following disclaimer.
+#2. Redistributions in binary form must reproduce the above copyright
+#   notice, this list of conditions and the following disclaimer in the
+#   documentation and/or other materials provided with the distribution.
+#
+#THIS SOFTWARE IS PROVIDED BY THE EDGEBSD PROJECT AND CONTRIBUTORS
+#``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+#TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+#PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE FOUNDATION OR CONTRIBUTORS
+#BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+#CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+#SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+#INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+#CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+#ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+#POSSIBILITY OF SUCH DAMAGE.
+
+
+
+#variables
+#executables
+ACME_TINY="acme_tiny"
+CHMOD="chmod"
+DEBUG=
+MKDIR="mkdir -p"
+MKTEMP="mktemp"
+MV="mv -f"
+OPENSSL="openssl"
+RM="rm -f"
+SERVICE="/usr/sbin/service"
+TOUCH="touch"
+#settings
+ACCOUNTKEY="account.key"
+ACMEDIR="/var/www/acme"
+OPENSSLARGS=
+OPENSSLCNF="@SYSCONFDIR@/$VENDOR/$PROGNAME/openssl.cnf"
+[ ! -f "$OPENSSLCNF" -a -d "/etc/ssl" ] && OPENSSLCNF="/etc/ssl/openssl.cnf"
+[ ! -f "$OPENSSLCNF" -a -d "/etc/openssl" ] && OPENSSLCNF="/etc/openssl/openssl.cnf"
+OPENSSL_DAYS=365
+OPENSSL_KEY_SIZE=4096
+PREFIX="@PREFIX@"
+PROGNAME="edgebsd-tls"
+RENEW_HOSTS=
+RENEW_SERVICES=
+SYSCONFDIR="@SYSCONFDIR@"
+VENDOR="EdgeBSD"
+BASEDIR="$SYSCONFDIR/$VENDOR/$PROGNAME"
+
+#load local settings
+[ -f "$SYSCONFDIR/$VENDOR/$PROGNAME.conf" ] &&
+	. "$SYSCONFDIR/$VENDOR/$PROGNAME.conf"
+[ -n "$HOME" -a -f "$HOME/.config/$VENDOR/$PROGNAME.conf" ] &&
+	. "$HOME/.config/$VENDOR/$PROGNAME.conf"
+
+
+#functions
+#debug
+_debug()
+{
+	echo "$@" 1>&2
+	"$@"
+}
+
+
+#error
+_error()
+{
+	echo "$PROGNAME: $@" 1>&2
+	return 2
+}
+
+
+#info
+_info()
+{
+	echo "$PROGNAME: $@"
+	return 0
+}
+
+
+#edgebsd-tls
+_edgebsd_tls()
+{
+	shift $((OPTIND - 1))
+	if [ $# -eq 0 ]; then
+		_usage
+		return $?
+	fi
+	command="$1"
+	shift
+	case "$command" in
+		acme|create|renew)
+			"_edgebsd_tls_$command" "$@"
+			return $?
+			;;
+		*)
+			_usage "$command: Unknown command"
+			return $?
+			;;
+	esac
+}
+
+_edgebsd_tls_acme()
+{
+	ret=0
+
+	while getopts "O:qv" name; do
+		case "$name" in
+			O)
+				eval "${OPTARG%%=*}"="${OPTARG#*=}"
+				;;
+			q)
+				ACME="$ACME_TINY --quiet"
+				;;
+			v)
+				ACME="$ACME_TINY"
+				;;
+			*)
+				_usage
+				return $?
+				;;
+		esac
+	done
+	shift $((OPTIND - 1))
+	if [ $# -eq 0 ]; then
+		_usage "acme: At least one hostname is required"
+		return $?
+	fi
+	for hostname in "$@"; do
+		_acme_host "$hostname"				|| ret=2
+	done
+	return $ret
+}
+
+_acme_host()
+{
+	keyfile="$BASEDIR/$ACCOUNTKEY"
+	hostname="$1"
+
+	[ -d "$BASEDIR" ] || $DEBUG $MKDIR -- "$BASEDIR"
+	if [ ! -f "$keyfile" ]; then
+		[ $verbose -ge 2 ] && _info "Creating the account key..."
+		$DEBUG $TOUCH "$keyfile" &&
+		$DEBUG $CHMOD 0600 "$keyfile" &&
+		$DEBUG $OPENSSL genrsa -out "$keyfile" 4096
+		if [ $? -ne 0 ]; then
+			_error "$keyfile: Could not create the account key"
+			return $?
+		fi
+	fi
+	[ -d "$ACMEDIR" ] || $DEBUG $MKDIR -- "$ACMEDIR"
+	tmpfile=$($DEBUG $MKTEMP)
+	[ $? -eq 0 ]						|| return 2
+	$DEBUG $ACME --account-key "$keyfile" \
+		--csr "$BASEDIR/$hostname.csr" \
+		--acme-dir "$ACMEDIR" > "$tmpfile" &&
+	$DEBUG $MV -- "$tmpfile" "$BASEDIR/$hostname.crt"
+	res=$?
+	[ $res -eq 0 ] || $RM -- "$tmpfile"
+	return $res
+}
+
+_edgebsd_tls_create()
+{
+	ret=0
+	bits="rsa:$OPENSSL_KEY_SIZE"
+	days=$OPENSSL_DAYS
+	ext=".csr"
+	extensions="-extensions v3_req"
+	force=0
+	sign=
+	user=0
+	verbose=1
+
+	while getopts "O:b:d:fqsuv" name; do
+		case "$name" in
+			O)
+				eval "${OPTARG%%=*}"="${OPTARG#*=}"
+				;;
+			b)
+				bits="rsa:$OPTARG"
+				;;
+			d)
+				#XXX verify that OPTARG is numerical
+				days="$OPTARG"
+				;;
+			f)
+				force=1
+				;;
+			q)
+				verbose=0
+				;;
+			s)
+				sign="-x509"
+				ext=".crt"
+				[ $user -eq 0 ] && extensions="-extensions srv_cert"
+				;;
+			u)
+				user=1
+				extensions="-extensions usr_cert"
+				;;
+			v)
+				verbose=$((verbose + 1))
+				;;
+			*)
+				_usage
+				return $?
+				;;
+		esac
+	done
+	shift $((OPTIND - 1))
+	if [ $# -eq 0 ]; then
+		_usage "create: At least one hostname is required"
+		return $?
+	fi
+	[ -f "$OPENSSLCNF" ] && OPENSSLARGS="-config $OPENSSLCNF"
+	[ -n "$sign" -a $days -gt 0 ] && sign="$sign -days $days"
+	for hostname in "$@"; do
+		_create_hostname "$hostname"			|| ret=2
+	done
+	return $ret
+}
+
+_create_hostname()
+{
+	hostname="$1"
+	s="$sign"
+
+	[ $user -eq 0 ] && case "$hostname" in
+		www.*)
+			[ $verbose -ge 2 ] && _info "${hostname#www.}:" \
+				" Adding alternate subject..."
+			s="$s -addext subjectAltName=DNS:${hostname#www.}"
+			;;
+	esac
+
+	keyfile="$hostname.key"
+	[ $verbose -ge 2 ] && _info "$keyfile: Generating private key..."
+	if [ -f "$keyfile" ]; then
+		if [ $force -eq 0 ]; then
+			_error "$hostname: Private key already generated"
+			return $?
+		fi
+	else
+		$DEBUG $TOUCH "$keyfile" &&
+		$DEBUG $CHMOD 0600 "$keyfile"
+		if [ $? -ne 0 ]; then
+			_error "$keyfile: Could not create the private key"
+			return $?
+		fi
+	fi
+	[ $verbose -ge 2 ] && _info "$hostname$ext: Creating certificate..."
+	$DEBUG $OPENSSL req $OPENSSLARGS -new $s -nodes -sha256 \
+		-newkey "$bits" -keyout "$keyfile" $extensions \
+		-out "$hostname$ext"
+	if [ $? -ne 0 ]; then
+		_error "$hostname: Could not create the certificate"
+		return $?
+	fi
+}
+
+_edgebsd_tls_renew()
+{
+	ret=0
+	all=0
+	reload=0
+	services="$RENEW_SERVICES"
+
+	while getopts "O:S:aqv" name; do
+		case "$name" in
+			O)
+				eval "${OPTARG%%=*}"="${OPTARG#*=}"
+				;;
+			S)
+				services="$OPTARG"
+				;;
+			a)
+				all=1
+				;;
+			q)
+				verbose=0
+				;;
+			v)
+				verbose=$((verbose + 1))
+				;;
+			*)
+				_usage
+				return $?
+				;;
+		esac
+	done
+	shift $((OPTIND - 1))
+	if [ $# -eq 0 -a $all -ne 0 ]; then
+		for hostname in $RENEW_HOSTS; do
+			_renew_host "$hostname"
+			if [ $? -eq 0 ]; then
+				reload=1
+			else
+				ret=2
+			fi
+		done
+	elif [ $# -ne 0 ]; then
+		for hostname in "$@"; do
+			_renew_host "$hostname"
+			if [ $? -eq 0 ]; then
+				reload=1
+			else
+				ret=2
+			fi
+		done
+	else
+		_usage "renew: At least one hostname is required"
+		return $?
+	fi
+	[ $reload -eq 1 ] && for service in $services; do
+		[ $verbose -ge 2 ] && _info "$service: Reloading service..."
+		($DEBUG $SERVICE "$service" reload ||
+			$DEBUG $SERVICE "$service" restart)	|| ret=3
+	done
+	return $ret
+}
+
+_renew_host()
+{
+	hostname="$1"
+
+	[ $verbose -ge 2 ] && _info "$hostname: Renewing host..."
+	_acme_host "$hostname"
+}
+
+
+#usage
+_usage()
+{
+	[ $# -ge 1 ] && echo "$PROGNAME: $@" 1>&2
+	echo "Usage: $PROGNAME command [options...]" 1>&2
+	echo 1>&2
+	echo "Commands supported:" 1>&2
+	echo "  acme		Request one or more TLS certificate signatures" 1>&2
+	echo "  create	Create one or more TLS certificates" 1>&2
+	echo "  renew		Renew one or more TLS certificates" 1>&2
+	echo 1>&2
+	echo "       $PROGNAME acme [-qv] hostname..." 1>&2
+	echo 1>&2
+	echo "       $PROGNAME create [-b bits][-d days][-fqsv] hostname..." 1>&2
+	echo "       $PROGNAME create [-b bits][-d days][-fqsv] -u e-mail..." 1>&2
+	echo "  -b	Size of the key to generate (default: $OPENSSL_KEY_SIZE)" 1>&2
+	echo "  -d	Duration of the validity in days (default: $OPENSSL_DAYS)" 1>&2
+	echo "  -q	Operate in quiet mode" 1>&2
+	echo "  -s	Generate a self-signed certificate" 1>&2
+	echo "  -u	Generate a user certificate" 1>&2
+	echo "  -v	Increase the verbosity" 1>&2
+	echo 1>&2
+	echo "       $PROGNAME renew [-S service...][-qv] hostname..." 1>&2
+	echo "       $PROGNAME renew [-S service...][-qv] -a" 1>&2
+	echo "  -S	List of services to reload upon success" 1>&2
+	echo "  -q	Operate in quiet mode" 1>&2
+	echo "  -v	Increase the verbosity" 1>&2
+	echo "  -a	Renew all the hosts configured" 1>&2
+	return 1
+}
+
+
+#main
+_edgebsd_tls "$@"

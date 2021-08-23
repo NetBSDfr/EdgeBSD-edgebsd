@@ -1,0 +1,5 @@
+@comment $NetBSD$
+man/html8/edgebsd-tls.html
+man/man8/edgebsd-tls.8
+sbin/edgebsd-tls
+share/doc/edgebsd-tls/openssl.cnf
