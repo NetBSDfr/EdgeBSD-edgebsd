@@ -111,6 +111,8 @@ _edgebsd_tls()
 
 _edgebsd_tls_acme()
 {
+	ret=0
+
 	while getopts "O:qv" name; do
 		case "$name" in
 			O)
@@ -134,12 +136,12 @@ _edgebsd_tls_acme()
 		return $?
 	fi
 	for hostname in "$@"; do
-		_acme_hostname "$hostname"			|| ret=2
+		_acme_host "$hostname"				|| ret=2
 	done
-	return 2
+	return $ret
 }
 
-_edgebsd_tls_acme_hostname()
+_acme_host()
 {
 	keyfile="$BASEDIR/$ACCOUNTKEY"
 	hostname="$1"
@@ -162,7 +164,9 @@ _edgebsd_tls_acme_hostname()
 		--csr "$BASEDIR/$hostname.csr" \
 		--acme-dir "$ACMEDIR" > "$tmpfile" &&
 	$DEBUG $MV -- "$tmpfile" "$BASEDIR/$hostname.crt"
-	return $?
+	res=$?
+	[ $res -eq 0 ] || $RM -- "$tmpfile"
+	return $res
 }
 
 _edgebsd_tls_create()
@@ -327,7 +331,7 @@ _renew_host()
 	hostname="$1"
 
 	[ $verbose -ge 2 ] && _info "$hostname: Renewing host..."
-	_acme_hostname "$hostname"
+	_acme_host "$hostname"
 }
 
 
