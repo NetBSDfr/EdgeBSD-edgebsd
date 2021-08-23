@@ -31,10 +31,16 @@
 #executables
 ACME_TINY="acme_tiny"
 CHMOD="chmod"
-DEBUG="_debug"
+DEBUG=
+MKDIR="mkdir -p"
+MKTEMP="mktemp"
+MV="mv -f"
 OPENSSL="openssl"
+RM="rm -f"
 TOUCH="touch"
 #settings
+ACCOUNTKEY="account.key"
+ACMEDIR="/var/www/acme"
 OPENSSLARGS=
 OPENSSLCNF="/etc/ssl/openssl.cnf"
 [ ! -f "$OPENSSLCNF" -a -d "/etc/openssl" ] && OPENSSLCNF="/etc/openssl/openssl.cnf"
@@ -44,6 +50,7 @@ PREFIX="@PREFIX@"
 PROGNAME="edgebsd-tls"
 SYSCONFDIR="@SYSCONFDIR@"
 VENDOR="EdgeBSD"
+BASEDIR="$SYSCONFDIR/$VENDOR/$PROGNAME"
 
 #load local settings
 [ -f "$SYSCONFDIR/$VENDOR/$PROGNAME.conf" ] &&
@@ -80,7 +87,7 @@ _edgebsd_tls()
 	command="$1"
 	shift
 	case "$command" in
-		create|renew)
+		acme|create|renew)
 			"_edgebsd_tls_$command" "$@"
 			return $?
 			;;
@@ -89,6 +96,61 @@ _edgebsd_tls()
 			return $?
 			;;
 	esac
+}
+
+_edgebsd_tls_acme()
+{
+	while getopts "O:qv" name; do
+		case "$name" in
+			O)
+				eval "${OPTARG%%=*}"="${OPTARG#*=}"
+				;;
+			q)
+				ACME="$ACME_TINY --quiet"
+				;;
+			v)
+				ACME="$ACME_TINY"
+				;;
+			*)
+				_usage
+				return $?
+				;;
+		esac
+	done
+	shift $((OPTIND - 1))
+	if [ $# -eq 0 ]; then
+		_usage "acme: At least one hostname is required"
+		return $?
+	fi
+	for hostname in "$@"; do
+		_acme_hostname "$hostname"			|| ret=2
+	done
+	return 2
+}
+
+_edgebsd_tls_acme_hostname()
+{
+	keyfile="$BASEDIR/$ACCOUNTKEY"
+	hostname="$1"
+
+	[ -d "$BASEDIR" ] || $DEBUG $MKDIR -- "$BASEDIR"
+	if [ ! -f "$keyfile" ]; then
+		$DEBUG $TOUCH "$keyfile" &&
+		$DEBUG $CHMOD 0600 "$keyfile" &&
+		$DEBUG $OPENSSL genrsa -out "$keyfile" 4096
+		if [ $? -ne 0 ]; then
+			_error "$keyfile: Could not create the account key"
+			return $?
+		fi
+	fi
+	[ -d "$ACMEDIR" ] || $DEBUG $MKDIR -- "$ACMEDIR"
+	tmpfile=$($DEBUG $MKTEMP)
+	[ $? -eq 0 ]						|| return 2
+	$DEBUG $ACME --account-key "$keyfile" \
+		--csr "$BASEDIR/$hostname.csr" \
+		--acme-dir "$ACMEDIR" > "$tmpfile" &&
+	$DEBUG $MV -- "$tmpfile" "$BASEDIR/$hostname.crt"
+	return $?
 }
 
 _edgebsd_tls_create()
@@ -218,8 +280,11 @@ _usage()
 	echo "Usage: $PROGNAME command [options...]" 1>&2
 	echo 1>&2
 	echo "Commands supported:" 1>&2
+	echo "  acme		Request one or more TLS certificate signatures" 1>&2
 	echo "  create	Create one or more TLS certificates" 1>&2
 	echo "  renew		Renew one or more TLS certificates" 1>&2
+	echo 1>&2
+	echo "       $PROGNAME acme [-qv] hostname..." 1>&2
 	echo 1>&2
 	echo "       $PROGNAME create [-b bits][-d days][-fqsv] hostname..." 1>&2
 	echo "       $PROGNAME create [-b bits][-d days][-fqsv] -u e-mail..." 1>&2
