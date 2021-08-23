@@ -1,0 +1,149 @@
+#!/bin/sh
+#Copyright (c) 2021 Pierre Pronchery <khorben@edgebsd.org>
+#
+#This code is derived from software contributed to the EdgeBSD Project
+#by Pierre Pronchery <khorben@edgebsd.org>
+#
+#Redistribution and use in source and binary forms, with or without
+#modification, are permitted provided that the following conditions
+#are met:
+#1. Redistributions of source code must retain the above copyright
+#   notice, this list of conditions and the following disclaimer.
+#2. Redistributions in binary form must reproduce the above copyright
+#   notice, this list of conditions and the following disclaimer in the
+#   documentation and/or other materials provided with the distribution.
+#
+#THIS SOFTWARE IS PROVIDED BY THE EDGEBSD PROJECT AND CONTRIBUTORS
+#``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+#TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+#PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE FOUNDATION OR CONTRIBUTORS
+#BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+#CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+#SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+#INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+#CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+#ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+#POSSIBILITY OF SUCH DAMAGE.
+
+
+
+#variables
+#executables
+OPENSSL="openssl"
+#settings
+PREFIX="@PREFIX@"
+PROGNAME="edgebsd-tls"
+SYSCONFDIR="@SYSCONFDIR@"
+VENDOR="EdgeBSD"
+
+#load local settings
+[ -f "$SYSCONFDIR/$VENDOR/$PROGNAME.conf" ] &&
+	. "$SYSCONFDIR/$VENDOR/$PROGNAME.conf"
+[ -n "$HOME" -a -f "$HOME/.config/$VENDOR/$PROGNAME.conf" ] &&
+	. "$HOME/.config/$VENDOR/$PROGNAME.conf"
+
+
+#functions
+#debug
+_debug()
+{
+	echo "$@" 1>&2
+	"$@"
+}
+
+
+#error
+_error()
+{
+	echo "$PROGNAME: $@" 1>&2
+	return 2
+}
+
+
+#edgebsd-tls
+_edgebsd_tls()
+{
+	shift $((OPTIND - 1))
+	if [ $# -eq 0 ]; then
+		_usage
+		return $?
+	fi
+	command="$1"
+	shift
+	case "$command" in
+		create|renew)
+			"_edgebsd_tls_$command" "$@"
+			return $?
+			;;
+		*)
+			_usage "$command: Unknown command"
+			return $?
+			;;
+	esac
+}
+
+_edgebsd_tls_create()
+{
+	while getopts "O:" name; do
+		case "$name" in
+			O)
+				eval "${OPTARG%%=*}"="${OPTARG#*=}"
+				;;
+			*)
+				_usage
+				return $?
+				;;
+		esac
+	done
+	shift $((OPTIND - 1))
+	if [ $# -eq 0 ]; then
+		_usage "create: At least one hostname is required"
+		return $?
+	fi
+	#FIXME
+	return 2
+}
+
+_edgebsd_tls_renew()
+{
+	all=0
+
+	while getopts "O:a" name; do
+		case "$name" in
+			O)
+				eval "${OPTARG%%=*}"="${OPTARG#*=}"
+				;;
+			a)
+				all=1
+				;;
+			*)
+				_usage
+				return $?
+				;;
+		esac
+	done
+	shift $((OPTIND - 1))
+	if [ $# -eq 0 -a $all -eq 0 ]; then
+		_usage "renew: At least one hostname is required"
+		return $?
+	fi
+	#FIXME
+	return 2
+}
+
+
+#usage
+_usage()
+{
+	[ $# -ge 1 ] && echo "$PROGNAME: $@" 1>&2
+	echo "Usage: $PROGNAME command [options...]" 1>&2
+	echo 1>&2
+	echo "Commands supported:" 1>&2
+	echo "  create" 1>&2
+	echo "  renew [-a]	Renew one or more TLS certificates" 1>&2
+	return 1
+}
+
+
+#main
+_edgebsd_tls "$@"
