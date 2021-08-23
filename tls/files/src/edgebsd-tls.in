@@ -29,8 +29,17 @@
 
 #variables
 #executables
+ACME_TINY="acme_tiny"
+CHMOD="chmod"
+DEBUG="_debug"
 OPENSSL="openssl"
+TOUCH="touch"
 #settings
+OPENSSLARGS=
+OPENSSLCNF="/etc/ssl/openssl.cnf"
+[ ! -f "$OPENSSLCNF" -a -d "/etc/openssl" ] && OPENSSLCNF="/etc/openssl/openssl.cnf"
+OPENSSL_DAYS=365
+OPENSSL_KEY_SIZE=4096
 PREFIX="@PREFIX@"
 PROGNAME="edgebsd-tls"
 SYSCONFDIR="@SYSCONFDIR@"
@@ -84,10 +93,45 @@ _edgebsd_tls()
 
 _edgebsd_tls_create()
 {
-	while getopts "O:" name; do
+	ret=0
+	bits="rsa:$OPENSSL_KEY_SIZE"
+	days=$OPENSSL_DAYS
+	ext=".csr"
+	extensions="-extensions v3_req"
+	force=0
+	sign=
+	user=0
+	verbose=1
+
+	while getopts "O:b:d:fqsuv" name; do
 		case "$name" in
 			O)
 				eval "${OPTARG%%=*}"="${OPTARG#*=}"
+				;;
+			b)
+				bits="rsa:$OPTARG"
+				;;
+			d)
+				#XXX verify that OPTARG is numerical
+				days="$OPTARG"
+				;;
+			f)
+				force=1
+				;;
+			q)
+				verbose=0
+				;;
+			s)
+				sign="-x509"
+				ext=".crt"
+				[ $user -eq 0 ] && extensions="-extensions srv_cert"
+				;;
+			u)
+				user=1
+				extensions="-extensions usr_cert"
+				;;
+			v)
+				verbose=$((verbose + 1))
 				;;
 			*)
 				_usage
@@ -100,8 +144,43 @@ _edgebsd_tls_create()
 		_usage "create: At least one hostname is required"
 		return $?
 	fi
-	#FIXME
-	return 2
+	for hostname in "$@"; do
+		_create_hostname "$hostname"			|| ret=2
+	done
+	return $ret
+}
+
+_create_hostname()
+{
+	hostname="$1"
+
+	[ $user -eq 0 ] && case "$hostname" in
+		www.*)
+			sign="$sign -addext subjectAltName=DNS:${hostname#www.}"
+			;;
+	esac
+
+	keyfile="$hostname.key"
+	if [ -f "$keyfile" ]; then
+		if [ $force -eq 0 ]; then
+			_error "$hostname: Private key already generated"
+			return $?
+		fi
+	else
+		$DEBUG $TOUCH "$keyfile" &&
+		$DEBUG $CHMOD 0600 "$keyfile"
+		if [ $? -ne 0 ]; then
+			_error "$keyfile: Could not create the private key"
+			return $?
+		fi
+	fi
+	$DEBUG $OPENSSL req $OPENSSLARGS -new $sign -nodes -sha256 \
+		-newkey "$bits" -keyout "$keyfile" $extensions \
+		-out "$hostname$ext"
+	if [ $? -ne 0 ]; then
+		_error "$hostname: Could not create the certificate"
+		return $?
+	fi
 }
 
 _edgebsd_tls_renew()
@@ -139,8 +218,20 @@ _usage()
 	echo "Usage: $PROGNAME command [options...]" 1>&2
 	echo 1>&2
 	echo "Commands supported:" 1>&2
-	echo "  create" 1>&2
-	echo "  renew [-a]	Renew one or more TLS certificates" 1>&2
+	echo "  create	Create one or more TLS certificates" 1>&2
+	echo "  renew		Renew one or more TLS certificates" 1>&2
+	echo 1>&2
+	echo "       $PROGNAME create [-b bits][-d days][-fqsv] hostname..." 1>&2
+	echo "       $PROGNAME create [-b bits][-d days][-fqsv] -u e-mail..." 1>&2
+	echo "  -b	Size of the key to generate (default: $OPENSSL_KEY_SIZE)" 1>&2
+	echo "  -d	Duration of the validity in days (default: $OPENSSL_DAYS)" 1>&2
+	echo "  -q	Operate in quiet mode" 1>&2
+	echo "  -s	Generate a self-signed certificate" 1>&2
+	echo "  -u	Generate a user certificate" 1>&2
+	echo "  -v	Increase the verbosity" 1>&2
+	echo 1>&2
+	echo "       $PROGNAME renew [-qv] hostname..." 1>&2
+	echo "       $PROGNAME renew [-qv] -a" 1>&2
 	return 1
 }
 
