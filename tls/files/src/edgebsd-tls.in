@@ -43,7 +43,8 @@ TOUCH="touch"
 ACCOUNTKEY="account.key"
 ACMEDIR="/var/www/acme"
 OPENSSLARGS=
-OPENSSLCNF="/etc/ssl/openssl.cnf"
+OPENSSLCNF="@SYSCONFDIR@/$VENDOR/$PROGNAME/openssl.cnf"
+[ ! -f "$OPENSSLCNF" -a -d "/etc/ssl" ] && OPENSSLCNF="/etc/ssl/openssl.cnf"
 [ ! -f "$OPENSSLCNF" -a -d "/etc/openssl" ] && OPENSSLCNF="/etc/openssl/openssl.cnf"
 OPENSSL_DAYS=365
 OPENSSL_KEY_SIZE=4096
@@ -222,6 +223,8 @@ _edgebsd_tls_create()
 		_usage "create: At least one hostname is required"
 		return $?
 	fi
+	[ -f "$OPENSSLCNF" ] && OPENSSLARGS="-config $OPENSSLCNF"
+	[ -n "$sign" -a $days -gt 0 ] && sign="$sign -days $days"
 	for hostname in "$@"; do
 		_create_hostname "$hostname"			|| ret=2
 	done
@@ -231,12 +234,13 @@ _edgebsd_tls_create()
 _create_hostname()
 {
 	hostname="$1"
+	s="$sign"
 
 	[ $user -eq 0 ] && case "$hostname" in
 		www.*)
 			[ $verbose -ge 2 ] && _info "${hostname#www.}:" \
 				" Adding alternate subject..."
-			sign="$sign -addext subjectAltName=DNS:${hostname#www.}"
+			s="$s -addext subjectAltName=DNS:${hostname#www.}"
 			;;
 	esac
 
@@ -256,7 +260,7 @@ _create_hostname()
 		fi
 	fi
 	[ $verbose -ge 2 ] && _info "$hostname$ext: Creating certificate..."
-	$DEBUG $OPENSSL req $OPENSSLARGS -new $sign -nodes -sha256 \
+	$DEBUG $OPENSSL req $OPENSSLARGS -new $s -nodes -sha256 \
 		-newkey "$bits" -keyout "$keyfile" $extensions \
 		-out "$hostname$ext"
 	if [ $? -ne 0 ]; then
