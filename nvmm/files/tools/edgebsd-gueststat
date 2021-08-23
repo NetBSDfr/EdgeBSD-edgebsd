@@ -1,0 +1,1063 @@
+#!/bin/sh
+#Copyright (c) 2019-2021 Pierre Pronchery <khorben@edgebsd.org>
+#This file is part of EdgeBSD NVMM
+#Redistribution and use in source and binary forms, with or without
+#modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+#THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+#AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+#IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+#DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+#FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+#DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+#SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+#CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+#OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+#OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+
+
+#variables
+#executables
+CAT="cat"
+CHOWN="chown"
+DD="dd"
+DEBUG="_debug"
+DISKLABEL="disklabel"
+FDISK="fdisk"
+INSTALL="install"
+INSTALLBOOT="installboot"
+LN="ln -f"
+MKDIR="mkdir"
+MKSPARSE="_mksparse"
+MKTEMP="mktemp"
+MOUNT="mount"
+NEWFS="newfs -O 2"
+NVMM_XL="nvmm-xl"
+PKG_ADD="pkg_add"
+POSTINSTALL="postinstall"
+PRINTF="printf"
+PROGRESS="progress"
+PWD_MKDB="pwd_mkdb"
+RMDIR="rmdir"
+SED="sed"
+SHA1="sha1"
+TAR="/rescue/tar"
+TR="tr"
+UMOUNT="umount"
+UNAME="uname"
+VNDCONFIG="vndconfig"
+XEN_XL="xl"
+ZCAT="zcat"
+#settings
+ARCH=$($UNAME -m)
+DESTDIR=
+DEVZERO="/dev/zero"
+DIRECTORIES=
+EDGEBSD_MIRROR=
+EDGEBSD_VENDOR="EdgeBSD"
+FORCE=0
+GROUPS=
+HYPERVISOR=
+INSTALLBOOT_OPTIONS=
+KERNELS=
+MOUNTPOINTS="tmpfs		/tmp	tmpfs	rw,noexec,-m=1777,-s=64m
+kernfs		/kern	kernfs	rw
+ptyfs		/dev/pts	ptyfs	rw
+procfs		/proc	procfs	rw
+/dev/cd0a	/cdrom	cd9660	ro,noauto
+tmpfs		/var/shm	tmpfs	rw,-m1777,-sram%25"
+NVMM_HOMEDIR="/home/xen"
+NVMM_BRIDGEIF="bridge0"
+NVMM_SYSCONFDIR="/usr/pkg/etc/nvmm"
+PACKAGES="vim"
+PREFIX="/usr/local"
+PROGNAME="edgebsd-gueststat"
+ROOT_DEVICE=
+SERVICES="dhcpcd	YES	-qb
+inetd	NO"
+SETEXT=
+SETS=
+SYSCONFDIR="$PREFIX/etc"
+SYSCTL_BOOTTIME="net.inet.ip.random_id=1"
+TIMEZONE="UTC"
+USERMGMT_SKEL_DIR="/etc/skel"
+USERS=
+VERBOSE=1
+XEN_HOMEDIR="/home/xen"
+XEN_BRIDGEIF="bridge0"
+XEN_SYSCONFDIR="/usr/pkg/etc/xen"
+
+#load local settings
+[ -f "$SYSCONFDIR/$EDGEBSD_VENDOR/$PROGNAME.conf" ] &&
+	. "$SYSCONFDIR/$EDGEBSD_VENDOR/$PROGNAME.conf"
+[ -f "$HOME/.config/$EDGEBSD_VENDOR/$PROGNAME.conf" ] &&
+	. "$HOME/.config/$EDGEBSD_VENDOR/$PROGNAME.conf"
+
+
+#functions
+#debug
+_debug()
+{
+	[ $VERBOSE -ge 3 ] && echo "$@" 1>&2
+	"$@"
+}
+
+
+#error
+_error()
+{
+	echo "$PROGNAME: $@" 1>&2
+	return 2
+}
+
+
+#info
+_info()
+{
+	[ $VERBOSE -ge 2 ] && echo "$@" 1>&2
+}
+
+
+#mksparse
+_mksparse()
+{
+	size="$2"
+	filename="$3"
+
+	if [ -f "$filename" -a $FORCE -eq 0 ]; then
+		_error "$filename: Virtual Machine already exists"
+		return 2
+	fi
+	$DD if="$DEVZERO" of="$filename" bs="1" count="1" seek="$((size - 1))"
+}
+
+
+#gueststat
+_gueststat()
+{
+	#parse options
+	if [ $# -eq 0 ]; then
+		_usage "A command must be specified"
+		return $?
+	fi
+
+	case "$1" in
+		create|update)
+			;;
+		*)
+			_usage "$1: Unsupported command"
+			return $?
+			;;
+	esac
+	command="$1"
+	shift
+	_gueststat_$command "$@"
+}
+
+_gueststat_bootloader()
+{
+	dev="$1"
+	default=1
+
+	_info "Installing the bootloader..."
+	#/boot
+	if [ -f "$DESTDIR/usr/mdec/boot" ]; then
+		$DEBUG $INSTALL -m 0444 "$DESTDIR/usr/mdec/boot" \
+			"$DESTDIR/boot"				|| return 2
+
+		#/boot.cfg
+		$DEBUG $CAT > "$DESTDIR/boot.cfg" << EOF
+menu=Boot normally:rndseed /etc/entropy-file;boot netbsd.gz
+menu=Boot single user:rndseed /etc/entropy-file;boot netbsd.gz -s
+menu=Drop to boot prompt:prompt
+default=$default
+timeout=5
+clear=1
+EOF
+		[ $? -eq 0 ]					|| return 2
+	fi
+
+	#/prekern
+	if [ -f "$DESTDIR/usr/mdec/prekern" ]; then
+		$DEBUG $INSTALL -m 0444 "$DESTDIR/usr/mdec/prekern" \
+			"$DESTDIR/prekern"			|| return 2
+	fi
+
+	#MBR
+	if [ -f "$DESTDIR/usr/mdec/bootxx_ffsv2" ]; then
+		$DEBUG $INSTALLBOOT $INSTALLBOOT_OPTIONS \
+			-m "$ARCH" "/dev/${dev}a" \
+			"$DESTDIR/usr/mdec/bootxx_ffsv2"	|| return 2
+	fi
+	return 0
+}
+
+_gueststat_create()
+{
+	console=0
+	filename=
+	options="a:cfH:k:O:o:qr:Ss:v"
+	release=$($UNAME -r)
+	release="${release%.*}"
+	size=20000000000
+	start=0
+	_gueststat_options "$options" "$@"
+	while getopts "$options" name; do
+		case "$name" in
+			a)
+				ARCH="$OPTARG"
+				;;
+			c)
+				if [ ! -n "$HYPERVISOR" ]; then
+					_error "Hypervisor must be set first"
+					return $?
+				fi
+				console=1
+				start=1
+				;;
+			f)
+				FORCE=1
+				;;
+			H)
+				HYPERVISOR=$(echo "$OPTARG" | _tolower)
+				;;
+			k)
+				KERNELS="$OPTARG"
+				;;
+			O)
+				eval "${OPTARG%%=*}"="'${OPTARG#*=}'"
+				;;
+			o)
+				filename="$OPTARG"
+				;;
+			r)
+				release="$OPTARG"
+				;;
+			s)
+				size="$OPTARG"
+				;;
+			S)
+				if [ ! -n "$HYPERVISOR" ]; then
+					_error "Hypervisor must be set first"
+					return $?
+				fi
+				start=1
+				;;
+			q|v)
+				;;
+			*)
+				_usage "$name: Unsupported option"
+				return $?
+				;;
+		esac
+	done
+	shift $((OPTIND - 1))
+	if [ $# -ne 1 ]; then
+		_usage "create: Needs a hostname"
+		return $?
+	fi
+
+	_gueststat_defaults
+
+	_gueststat_create_hostname "$1"
+}
+
+_gueststat_create_hostname()
+{
+	hostname="$1"
+	domain="${hostname#*.}"
+
+	if [ "$hostname" = "$domain" ]; then
+		_error "$hostname: Must be fully qualified"
+		return $?
+	fi
+	hostname="${hostname%%.*}"
+	filename=$(_gueststat_filename "$hostname" "$domain")
+	[ $? -eq 0 -a -n "$filename" ]				|| return 2
+	[ -z "$HYPERVISOR" ] || case "$HYPERVISOR" in
+		nvmm|xen)
+			_gueststat_create_vm_$HYPERVISOR		|| return 2
+			;;
+		*)
+			_error "$HYPERVISOR: Unsupported hypervisor"
+			return $?
+			;;
+	esac
+	_info "Creating the volume..."
+	$DEBUG $MKSPARSE -s "$size" "$filename"			|| return 2
+	ksize="$((size / 512 - 63))"
+	$DEBUG $FDISK -Ffau0s "169/63/$ksize" "$filename"	|| return 2
+	dev="$(_gueststat_vndevice)"
+	if [ $? -ne 0 -o -z "$dev" ]; then
+		_error "$hostname: Could not obtain a VND"
+		return 2
+	fi
+	$DEBUG $VNDCONFIG -c "$dev" "$filename"			|| return 2
+	_gueststat_init "$hostname" "$domain" "$dev" "$size"
+	res=$?
+	$DEBUG $VNDCONFIG -u "$dev"				|| return 2
+	[ $res -eq 0 ]						|| return 2
+	if [ $start -ne 0 ]; then
+		_gueststat_start "$hostname" "$domain"		|| return 2
+	fi
+	return 0
+}
+
+_gueststat_create_vm_nvmm()
+{
+	template="template.$($UNAME -s | _tolower).${ARCH}"
+
+	_info "Configuring the Virtual Machine... (NVMM)"
+	if [ -f "$NVMM_SYSCONFDIR/$hostname" -a $FORCE -eq 0 ]; then
+		_error "$hostname: Host already configured"
+		return $?
+	fi
+	if [ ! -f "$NVMM_SYSCONFDIR/$template" ]; then
+		_error "$template: Template missing for this platform"
+		return $?
+	fi
+	macaddress="$(_gueststat_macaddress "$hostname" "$domain")"
+	$DEBUG $SED -e "s,@@HOSTNAME@@,$hostname," \
+		-e "s,@@DOMAINNAME@@,$domain," \
+		-e "s,@@BRIDGEINTERFACE@@,$NVMM_BRIDGEIF," \
+		-e "s,@@MACADDRESS@@,$macaddress," \
+		-- "$NVMM_SYSCONFDIR/$template" \
+		> "$NVMM_SYSCONFDIR/$hostname.$domain"		|| return 2
+	$DEBUG $MKDIR -p -- "$NVMM_HOMEDIR/hosts/$domain"	|| return 2
+	$DEBUG $MKDIR -- "$NVMM_HOMEDIR/hosts/$domain/$hostname"|| return 2
+}
+
+_gueststat_create_vm_xen()
+{
+	template="template.$($UNAME -s | _tolower).${ARCH}"
+
+	_info "Configuring the Virtual Machine... (Xen)"
+	if [ -f "$XEN_SYSCONFDIR/$hostname" -a $FORCE -eq 0 ]; then
+		_error "$hostname: Host already configured"
+		return $?
+	fi
+	if [ ! -f "$XEN_SYSCONFDIR/$template" ]; then
+		_error "$template: Template missing for this platform"
+		return $?
+	fi
+	macaddress="$(_gueststat_macaddress "$hostname" "$domain")"
+	$DEBUG $SED -e "s,@@HOSTNAME@@,$hostname," \
+		-e "s,@@DOMAINNAME@@,$domain," \
+		-e "s,@@BRIDGEINTERFACE@@,$XEN_BRIDGEIF," \
+		-e "s,@@MACADDRESS@@,$macaddress," \
+		-- "$XEN_SYSCONFDIR/$template" \
+		> "$XEN_SYSCONFDIR/$hostname.$domain"		|| return 2
+	$DEBUG $MKDIR -p -- "$XEN_HOMEDIR/hosts/$domain"	|| return 2
+	$DEBUG $MKDIR -- "$XEN_HOMEDIR/hosts/$domain/$hostname"	|| return 2
+}
+
+_gueststat_defaults()
+{
+	case "$release" in
+		6|7|8)
+			[ -n "$SETS" ] || SETS="base etc games man misc modules text"
+			;;
+		9)
+			[ -n "$SETS" ] || SETS="base etc games man misc modules rescue text"
+			;;
+		*)
+			_error "$release: Unsupported release"
+			return $?
+			;;
+	esac
+	[ -n "$EDGEBSD_MIRROR" ] || EDGEBSD_MIRROR="/home/ftp/pub/EdgeBSD/EdgeBSD-$release"
+
+	case "$release/$ARCH" in
+		9/amd64)
+			[ -n "$KERNELS" ] || KERNELS="GENERIC
+GENERIC_KASLR	kaslr
+XEN3_DOM0	xen"
+			[ -n "$SETEXT" ] || SETEXT=".tar.xz"
+			;;
+		9/i386)
+			[ -n "$KERNELS" ] || KERNELS="GENERIC
+GENERIC_KASLR	kaslr
+XEN3_DOM0	xen"
+			[ -n "$SETEXT" ] || SETEXT=".tar.xz"
+			;;
+		9)
+			[ -n "$SETEXT" ] || SETEXT=".tgz"
+			;;
+		*/amd64|*/i386)
+			[ -n "$KERNELS" ] || KERNELS="GENERIC
+XEN3_DOM0	xen"
+			;;
+		*)
+			[ -n "$SETEXT" ] || SETEXT=".tgz"
+			;;
+	esac
+
+	case "$HYPERVISOR" in
+		nvmm)
+			INSTALLBOOT_OPTIONS="-o console=com0,speed=115200"
+			[ -n "$ROOT_DEVICE" ] || ROOT_DEVICE="wd0"
+			;;
+		xen)
+			[ -n "$ROOT_DEVICE" ] || ROOT_DEVICE="xbd0"
+			;;
+		"")
+			;;
+		*)
+			_error "$HYPERVISOR: Unsupported hypervisor"
+			return $?
+			;;
+	esac
+
+	case $VERBOSE in
+		0|1|2)
+			DD="dd msgfmt=quiet"
+			NEWFS="$NEWFS -V 0"
+			;;
+		3)
+			FDISK="$FDISK -v"
+			INSTALLBOOT="$INSTALLBOOT -v"
+			NEWFS="$NEWFS -V 2"
+			;;
+		*)
+			FDISK="$FDISK -vv"
+			PKG_ADD="$PKG_ADD -v"
+			;;
+	esac
+}
+
+_gueststat_directories()
+{
+	directories="$1"
+
+	[ $# -eq 1 -a -n "$directories" ]			|| return 0
+	_info "Creating directories..."
+	while read directory mode owner group junk; do
+		[ -n "$mode" ] || mode=0755
+		$DEBUG $MKDIR -p -m "$mode" -- \
+			"$DESTDIR$directory"			|| return 2
+		if [ -n "$owner" ]; then
+			$DEBUG $CHOWN "$owner:$group" \
+				"$DESTDIR$directory"		|| return 2
+		fi
+	done << EOF
+$directories
+EOF
+	return 0
+}
+
+_gueststat_init()
+{
+	ret=0
+	hostname="$1"
+	domain="$2"
+	dev="$3"
+	size="$4"
+	cylinders="$((size / 2048))"
+	sectors="$((size / 512))"
+
+	_info "Initializing the volume..."
+	$DEBUG $DISKLABEL -R "${dev}" "/dev/stdin" << EOF
+type: vnd
+disk: vnd
+label: fictitious
+flags:
+bytes/sector: 512
+sectors/track: 32
+tracks/cylinder: 64
+sectors/cylinder: 2048
+cylinders: $cylinders
+total sectors: $sectors
+rpm: 3600
+interleave: 1
+trackskew: 0
+cylinderskew: 0
+headswitch: 0           # microseconds
+track-to-track seek: 0  # microseconds
+drivedata: 0
+
+4 partitions:
+ a:  $((sectors - 63))        63     4.2BSD      0     0     0
+ c:  $((sectors - 63))        63     unused      0     0
+ d:  $((sectors))         0     unused      0     0
+EOF
+	[ $? -eq 0 ]						|| return 2
+	$DEBUG $NEWFS "${dev}a"					|| return 2
+	DESTDIR=$(_gueststat_mount "$dev")
+	ret=$?
+	if [ $ret -eq 0 ]; then
+		(_gueststat_sets_install "$SETS" &&
+		 _gueststat_kernels "$KERNELS" &&
+		 _gueststat_bootloader "$dev" &&
+		 _gueststat_groups "$GROUPS" &&
+		 _gueststat_users "$USERS" &&
+		 _gueststat_packages "$PACKAGES" &&
+		 _gueststat_services "$SERVICES" &&
+		 _gueststat_directories "$DIRECTORIES" &&
+		 _gueststat_files)				|| ret=$?
+		$DEBUG $UMOUNT "$DESTDIR"
+	fi
+	$DEBUG $RMDIR -- "$DESTDIR"				|| return 2
+	return $ret
+}
+
+_gueststat_filename()
+{
+	hostname="$1"
+	domain="$2"
+
+	case "$HYPERVISOR" in
+		nvmm)
+			echo "$NVMM_HOMEDIR/hosts/$domain/$hostname/hd0.img"
+			;;
+		xen)
+			echo "$XEN_HOMEDIR/hosts/$domain/$hostname/hd0.img"
+			;;
+		"")
+			echo "${hostname}.${domain}-hd0.img"
+			;;
+		*)
+			_error "$HYPERVISOR: Unsupported hypervisor"
+			return 2
+			;;
+	esac
+}
+
+_gueststat_files()
+{
+	#/etc/daily.conf
+	$DEBUG $CAT > "$DESTDIR/etc/daily.conf" << EOF
+#	\$NetBSD: daily.conf,v 1.4 2000/10/01 05:53:01 lukem Exp \$
+#
+# see daily.conf(5) for more information.
+
+if [ -r /etc/defaults/daily.conf ]; then
+	. /etc/defaults/daily.conf
+fi
+
+# Add local overrides below
+#
+fetch_pkg_vulnerabilities=YES
+EOF
+	[ $? -eq 0 ]						|| return 2
+
+	#/etc/fstab
+	$DEBUG $CAT > "$DESTDIR/etc/fstab" << EOF
+# NetBSD /etc/fstab
+# See /usr/share/examples/fstab/ for more examples.
+/dev/${ROOT_DEVICE}a		/	ffs	rw,log		 1 1
+EOF
+	[ $? -eq 0 ]						|| return 2
+	while read device mountpoint line; do
+		$DEBUG $MKDIR -p -- "$DESTDIR/$mountpoint"	|| return 2
+		echo "$device	$mountpoint	$line" >> "$DESTDIR/etc/fstab"
+		[ $? -eq 0 ]					|| return 2
+	done << EOF
+$MOUNTPOINTS
+EOF
+	[ $? -eq 0 ]						|| return 2
+
+	#/etc/localtime
+	[ -n "$TIMEZONE" ] || TIMEZONE="UTC"
+	if [ ! -f "$DESTDIR/usr/share/zoneinfo/$TIMEZONE" ]; then
+		_error "$TIMEZONE: Invalid or unknown timezone"
+		return $?
+	fi
+	$DEBUG $LN -s "/usr/share/zoneinfo/$TIMEZONE" \
+		"$DESTDIR/etc/localtime"			|| return 2
+
+	#/etc/sysctl.conf
+	$DEBUG $CAT > "$DESTDIR/etc/sysctl.conf" << EOF
+#!/sbin/sysctl -f
+#
+# \$NetBSD: sysctl.conf,v 1.8 2011/09/25 21:47:22 christos Exp \$
+#
+# sysctl(8) variables to set at boot time.
+
+# Default on panic: dump core and reboot. See savecore(8) for information.
+# Switch this to 1 if you want to enter the kernel debugger on crashes
+# instead. See ddb(4) for an introduction and also try the "help" command
+# at the db> prompt.
+# If you understand the implication and want to change the behaviour before
+# /etc/rc.d/sysctl is run, use the kernel option DDB_ONPANIC, see options(4).
+ddb.onpanic?=0
+
+# Default core name template:
+#kern.defcorename=%n.core
+
+# Number of kernel threads to use for NFS client
+#vfs.nfs.iothreads=4
+
+# Default tty/pty character queue sizes. Should be bumped to 32K or so if
+# used in networking (ppp/pppoe)
+#kern.tty.qsize=1024
+
+$SYSCTL_BOOTTIME
+EOF
+	[ $? -eq 0 ]						|| return 2
+
+	#/etc/usermgmt.conf
+	$DEBUG $CAT > "$DESTDIR/etc/usermgmt.conf" << EOF
+base_dir	/home
+expire		0
+gid_range	500..999
+group		=uid
+homeperm	0700
+inactive	0
+preserve	false
+range		500..999
+skel_dir	$USERMGMT_SKEL_DIR
+shell		/bin/sh
+EOF
+	[ $? -eq 0 ]						|| return 2
+}
+
+_gueststat_groups()
+{
+	groups="$1"
+
+	[ -n "$groups" ]					|| return 0
+	$DEBUG $CAT >> "$DESTDIR/etc/group" << EOF
+$groups
+EOF
+	[ $? -eq 0 ]						|| return 2
+}
+
+_gueststat_kernels()
+{
+	kernels="$1"
+
+	[ $# -eq 1 -a -n "$kernels" ]				|| return 0
+	_info "Installing the kernels..."
+	echo "$kernels" | while read config suffix; do
+		kernel="netbsd"
+		[ -n "$suffix" ] && kernel="$kernel.$suffix"
+		kernel="$kernel.gz"
+		$DEBUG $INSTALL -m 0755 \
+			"$EDGEBSD_MIRROR/$ARCH/binary/kernel/netbsd-$config.gz" \
+			"$DESTDIR/$kernel"			|| return 2
+	done
+}
+
+_gueststat_macaddress()
+{
+	hostname="$1"
+	domain="$2"
+
+	hash="$(echo -n "$hostname.$domain" | $SHA1)"
+	hash1="${hash#??}" 1>&2
+	hash0="${hash%$hash1}"
+	hash2="${hash1#??}" 1>&2
+	hash1="${hash1%$hash2}"
+	hash3="${hash2#??}" 1>&2
+	hash2="${hash2%$hash3}"
+	hash4="${hash3#??}" 1>&2
+	hash3="${hash3%$hash4}"
+	hash5="${hash4#??}" 1>&2
+	hash4="${hash4%$hash5}"
+	hash6="${hash5#??}" 1>&2
+	hash5="${hash5%$hash6}"
+	echo -n "00:0e:22:$hash3:$hash4:$hash5"
+}
+
+_gueststat_mount()
+{
+	dev="$1"
+
+	if [ -n "$DESTDIR" ]; then
+		$DEBUG $MKDIR -p -- "$DESTDIR"			|| return 2
+	else
+		DESTDIR=$($MKTEMP -d)
+		[ $? -eq 0 ]					|| return 2
+	fi
+	$DEBUG $MOUNT "/dev/${dev}a" "$DESTDIR"			|| return 2
+	echo "$DESTDIR"
+}
+
+_gueststat_options()
+{
+	options="$1"
+	shift
+
+	while getopts "$options" name; do
+		case "$name" in
+			q)
+				VERBOSE=0
+				;;
+			v)
+				VERBOSE=$((VERBOSE + 1))
+				;;
+		esac
+	done
+}
+
+_gueststat_packages()
+{
+	packages="$1"
+
+	[ -n "$packages" ]					|| return 0
+	_info "Installing the packages..."
+	for package in $packages; do
+		PKG_PATH="$EDGEBSD_MIRROR/$ARCH/binary/packages/All" \
+			  $DEBUG $PKG_ADD -P "$DESTDIR" "$package"
+		ret=$?
+		[ $ret -eq 0 ]					|| return $?
+	done
+	return 0
+}
+
+_gueststat_services()
+{
+	services="$1"
+
+	#/etc/rc.conf
+	$DEBUG $CAT > "$DESTDIR/etc/rc.conf" << EOF
+#	\$NetBSD: rc.conf,v 1.97 2014/07/14 12:29:48 mbalmer Exp \$
+#
+# See rc.conf(5) for more information.
+#
+# Use program=YES to enable program, NO to disable it. program_flags are
+# passed to the program on the command line.
+#
+
+# Load the defaults in from /etc/defaults/rc.conf (if it's readable).
+# These can be overridden below.
+#
+if [ -r /etc/defaults/rc.conf ]; then
+	. /etc/defaults/rc.conf
+fi
+
+# If this is not set to YES, the system will drop into single-user mode.
+#
+rc_configured=YES
+
+# Add local overrides below.
+#
+clear_tmp=NO
+fsck_flags="-pP"
+hostname=$hostname.$domain
+newsyslog=YES
+no_swap=YES
+random_file=/etc/entropy-file
+savecore=NO
+virecover=NO
+
+#services
+EOF
+	[ -z "$services" ] || while read service enabled flags; do
+		[ -n "$service" -a -n "$enabled" ] || continue
+		line="$service=$enabled"
+		[ -n "$flags" ] && line="$line	${service}_flags=\"$flags\""
+		echo "$line" >> "$DESTDIR/etc/rc.conf"		|| return 2
+		if [ -f "$DESTDIR/usr/pkg/share/examples/rc.d/$service" ]; then
+			$DEBUG $INSTALL -m 0755 \
+				"$DESTDIR/usr/pkg/share/examples/rc.d/$service" \
+				"$DESTDIR/etc/rc.d/$service"	|| return 2
+		fi
+	done << EOF
+$services
+EOF
+	[ $? -eq 0 ]						|| return 2
+}
+
+_gueststat_sets_install()
+{
+	sets="$1"
+
+	_info "Installing the sets..."
+	for set in $sets; do
+		(cd "$DESTDIR" &&
+		 _progress -p "$($PRINTF "%-7s " "${set}")" \
+			 -f "$EDGEBSD_MIRROR/$ARCH/binary/sets/${set}$SETEXT" \
+			 $TAR -xzpf -)				|| return 2
+	done
+	return 0
+}
+
+_gueststat_sets_update()
+{
+	sets="$1"
+	etc=0
+
+	_info "Updating the sets..."
+	for set in $sets; do
+		if [ "$set" = "etc" -a -f "$DESTDIR/etc/mtree/set.$set" ]; then
+			etc=1
+			continue
+		fi
+		(cd "$DESTDIR" &&
+		 _progress -p "$($PRINTF "%-7s " "${set}")" \
+			 -f "$EDGEBSD_MIRROR/$ARCH/binary/sets/${set}$SETEXT" \
+			 $TAR -xzpf -)				|| return 2
+	done
+	if [ $etc -ne 0 ]; then
+		$DEBUG $POSTINSTALL -a "$ARCH" -d "$DESTDIR" \
+			-s "$EDGEBSD_MIRROR/$ARCH/binary/sets/etc$SETEXT" \
+			fix					|| return 2
+	fi
+	return 0
+}
+
+_gueststat_start()
+{
+	hostname="$1"
+	domain="$2"
+	options=
+
+	case "$HYPERVISOR" in
+		nvmm|xen)
+			_gueststat_start_$HYPERVISOR "$hostname" "$domain"
+			return $?
+			;;
+		*)
+			_error "$HYPERVISOR: Unsupported hypervisor"
+			return 2
+			;;
+	esac
+}
+
+_gueststat_start_nvmm()
+{
+	hostname="$1"
+	domain="$2"
+	options=
+
+	_info "Starting the Virtual Machine... (NVMM)"
+	[ $console -ne 0 ] && options="-c"
+	$DEBUG $NVMM_XL create $options "$NVMM_SYSCONFDIR/$hostname.$domain" \
+								|| return 2
+}
+
+_gueststat_start_xen()
+{
+	hostname="$1"
+	domain="$2"
+	options=
+
+	_info "Starting the Virtual Machine... (Xen)"
+	[ $console -ne 0 ] && options="-c"
+	$DEBUG $XEN_XL create $options "$XEN_SYSCONFDIR/$hostname.$domain" \
+								|| return 2
+}
+
+_gueststat_update()
+{
+	console=0
+	filename=
+	options="a:cH:O:o:qr:Sv"
+	release=$($UNAME -r)
+	release="${release%.*}"
+	start=0
+
+	_gueststat_options "$options" "$@"
+	while getopts "$options" name; do
+		case "$name" in
+			a)
+				ARCH="$OPTARG"
+				;;
+			c)
+				if [ ! -n "$HYPERVISOR" ]; then
+					_error "Hypervisor must be set first"
+					return $?
+				fi
+				console=1
+				start=1
+				;;
+			H)
+				HYPERVISOR=$(echo "$OPTARG" | _tolower)
+				;;
+			O)
+				eval "${OPTARG%%=*}"="'${OPTARG#*=}'"
+				;;
+			o)
+				filename="$OPTARG"
+				;;
+			r)
+				release="$OPTARG"
+				;;
+			S)
+				if [ ! -n "$HYPERVISOR" ]; then
+					_error "Hypervisor must be set first"
+					return $?
+				fi
+				start=1
+				;;
+			q|v)
+				;;
+			*)
+				_usage "$name: Unsupported option"
+				return $?
+				;;
+		esac
+	done
+	shift $((OPTIND - 1))
+	if [ $# -ne 1 ]; then
+		_usage "update: Needs a hostname"
+		return $?
+	fi
+
+	_gueststat_defaults
+	PKG_ADD="$PKG_ADD -u"
+
+	_gueststat_update_hostname "$1"
+}
+
+_gueststat_update_hostname()
+{
+	hostname="$1"
+	domain="${hostname#*.}"
+	res=0
+
+	if [ "$hostname" = "$domain" ]; then
+		_error "$hostname: Must be fully qualified"
+		return $?
+	fi
+	hostname="${hostname%%.*}"
+	if [ -z "$filename" ]; then
+		filename=$(_gueststat_filename "$hostname" "$domain")
+		[ $? -eq 0 -a -n "$filename" ]			|| return 2
+	fi
+	dev="$(_gueststat_vndevice)"
+	if [ $? -ne 0 -o -z "$dev" ]; then
+		_error "$hostname: Could not obtain a VND"
+		return 2
+	fi
+	$DEBUG $VNDCONFIG -c "$dev" "$filename"			|| return 2
+	DESTDIR=$(_gueststat_mount "$dev")
+	if [ $? -eq 0 ]; then
+		(_gueststat_sets_update "$SETS" &&
+		 _gueststat_kernels "$KERNELS" &&
+		 _gueststat_bootloader "$dev" &&
+		 _gueststat_packages "$PACKAGES" &&
+		 _gueststat_services "$SERVICES" &&
+		 _gueststat_directories "$DIRECTORIES" &&
+		 _gueststat_files)				|| res=$?
+		$DEBUG $UMOUNT "$DESTDIR"
+		$DEBUG $RMDIR -- "$DESTDIR"
+	fi
+	$DEBUG $VNDCONFIG -u "$dev"				|| return 2
+	[ $res -eq 0 ]						|| return 2
+	if [ $start -ne 0 ]; then
+		_gueststat_start "$hostname" "$domain"		|| return 2
+	fi
+	return 0
+}
+
+_gueststat_users()
+{
+	users="$1"
+
+	[ -n "$users" ]						|| return 0
+	$DEBUG $CAT >> "$DESTDIR/etc/master.passwd" << EOF
+$users
+EOF
+	[ $? -eq 0 ]						|| return 2
+	$DEBUG $PWD_MKDB -d "$DESTDIR" "$DESTDIR/etc/master.passwd" \
+								|| return 2
+}
+
+_gueststat_vndevice()
+{
+	#XXX ugly and will break after 16 VMs running
+	devices=$($DEBUG $VNDCONFIG -l -m 16)
+	while read device junk; do
+		if [ "$junk" = "not in use" ]; then
+			echo "${device%:}"
+			return 0
+		fi
+	done << EOF
+$devices
+EOF
+	return 2
+}
+
+
+#progress
+_progress()
+{(
+	cat="$CAT"
+	options=
+	filename=
+	prefix=
+
+	while getopts "ef:p:z" name; do
+		case "$name" in
+			e)
+				options="-e $options"
+				;;
+			f)
+				#XXX must be last
+				options="$options -f"
+				filename="$OPTARG"
+				;;
+			p)
+				prefix="$OPTARG"
+				;;
+			z)
+				options="-z $options"
+				cat="$ZCAT"
+				;;
+			*)
+				exit 1
+				;;
+		esac
+	done
+	shift $((OPTIND - 1))
+	if [ $# -lt 1 ]; then
+		return 1
+	fi
+	#only use progress(1) if in interactive and verbose mode
+	if [ -n "$PS1" -a $VERBOSE -ge 1 ]; then
+		$DEBUG $PROGRESS -p "$prefix" $options "$filename" -- "$@"
+	else
+		$DEBUG $cat -- "$filename" | "$@"
+	fi
+)}
+
+
+#tolower
+_tolower()
+{
+	$TR A-Z a-z
+}
+
+
+#usage
+_usage()
+{
+	[ $# -ge 1 ] && echo "$PROGNAME: $@" 1>&2
+	echo "Usage: $PROGNAME command [-qv][options...]" 1>&2
+	echo "  -q	Operate in quiet mode" 1>&2
+	echo "  -v	Increase verbosity (default: 1)" 1>&2
+	echo 1>&2
+	echo "Commands available:" 1>&2
+	echo "  create [-cfS][-a arch][-H hypervisor][-k kernels][-o filename][-r release][-s size] hostname" 1>&2
+	echo "  -a	Set the target architecture" 1>&2
+	echo "  -H	Set the target hypervisor (NVMM or Xen)" 1>&2
+	echo "  -S	Start the image (sets Xen mode)" 1>&2
+	echo "  -c	Start the image and enable the console (sets Xen mode)" 1>&2
+	echo "  -f	Overwrite the image if existing" 1>&2
+	echo "  -k	Set the kernels" 1>&2
+	echo "  -o	Set the output filename" 1>&2
+	echo "  -r	Set the target EdgeBSD release (6, 7, 8, or 9)" 1>&2
+	echo "  -s	Set the size of the target image (default: 20 GB)" 1>&2
+	echo 1>&2
+	echo "  update [-cS][-a arch][-H hypervisor][-o filename][-r release] hostname" 1>&2
+	echo "  -a	Set the target architecture" 1>&2
+	echo "  -H	Set the target hypervisor (NVMM or Xen)" 1>&2
+	echo "  -S	Start the image (sets Xen mode)" 1>&2
+	echo "  -c	Start the image and enable the console (sets Xen mode)" 1>&2
+	echo "  -o	Set the output filename" 1>&2
+	echo "  -r	Set the target EdgeBSD release (6, 7, 8, or 9)" 1>&2
+	return 1
+}
+
+
+#main
+_gueststat "$@"
