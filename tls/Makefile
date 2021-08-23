@@ -9,6 +9,10 @@ HOMEPAGE=	https://www.edgebsd.org/
 COMMENT=	TLS certificate management for EdgeBSD
 LICENSE=	modified-bsd
 
+EGDIR=		share/doc/edgebsd-tls
+CONF_FILES=	${EGDIR}/openssl.cnf ${PKG_SYSCONFDIR}/openssl.cnf
+PKG_SYSCONFSUBDIR=EdgeBSD/edgebsd-tls
+
 MAKE_FLAGS+=	PREFIX=${PREFIX:Q}
 
 TEST_TARGET=	tests
