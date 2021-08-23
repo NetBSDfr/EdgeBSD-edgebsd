@@ -37,6 +37,7 @@ MKTEMP="mktemp"
 MV="mv -f"
 OPENSSL="openssl"
 RM="rm -f"
+SERVICE="/usr/sbin/service"
 TOUCH="touch"
 #settings
 ACCOUNTKEY="account.key"
@@ -48,6 +49,8 @@ OPENSSL_DAYS=365
 OPENSSL_KEY_SIZE=4096
 PREFIX="@PREFIX@"
 PROGNAME="edgebsd-tls"
+RENEW_HOSTS=
+RENEW_SERVICES=
 SYSCONFDIR="@SYSCONFDIR@"
 VENDOR="EdgeBSD"
 BASEDIR="$SYSCONFDIR/$VENDOR/$PROGNAME"
@@ -247,15 +250,27 @@ _create_hostname()
 
 _edgebsd_tls_renew()
 {
+	ret=0
 	all=0
+	reload=0
+	services="$RENEW_SERVICES"
 
-	while getopts "O:a" name; do
+	while getopts "O:S:aqv" name; do
 		case "$name" in
 			O)
 				eval "${OPTARG%%=*}"="${OPTARG#*=}"
 				;;
+			S)
+				services="$OPTARG"
+				;;
 			a)
 				all=1
+				;;
+			q)
+				verbose=0
+				;;
+			v)
+				verbose=$((verbose + 1))
 				;;
 			*)
 				_usage
@@ -264,12 +279,42 @@ _edgebsd_tls_renew()
 		esac
 	done
 	shift $((OPTIND - 1))
-	if [ $# -eq 0 -a $all -eq 0 ]; then
+	if [ $# -eq 0 -a $all -ne 0 ]; then
+		for hostname in $RENEW_HOSTS; do
+			_renew_host "$hostname"
+			if [ $? -eq 0 ]; then
+				reload=1
+			else
+				ret=2
+			fi
+		done
+	elif [ $# -ne 0 ]; then
+		for hostname in "$@"; do
+			_renew_host "$hostname"
+			if [ $? -eq 0 ]; then
+				reload=1
+			else
+				ret=2
+			fi
+		done
+	else
 		_usage "renew: At least one hostname is required"
 		return $?
 	fi
-	#FIXME
-	return 2
+	[ $reload -eq 1 ] && for service in $services; do
+		[ $verbose -ge 2 ] && _info "$service: Reloading service..."
+		($DEBUG $SERVICE "$service" reload ||
+			$DEBUG $SERVICE "$service" restart)	|| ret=3
+	done
+	return $ret
+}
+
+_renew_host()
+{
+	hostname="$1"
+
+	[ $verbose -ge 2 ] && _info "$hostname: Renewing host..."
+	_acme_hostname "$hostname"
 }
 
 
@@ -295,8 +340,12 @@ _usage()
 	echo "  -u	Generate a user certificate" 1>&2
 	echo "  -v	Increase the verbosity" 1>&2
 	echo 1>&2
-	echo "       $PROGNAME renew [-qv] hostname..." 1>&2
-	echo "       $PROGNAME renew [-qv] -a" 1>&2
+	echo "       $PROGNAME renew [-S service...][-qv] hostname..." 1>&2
+	echo "       $PROGNAME renew [-S service...][-qv] -a" 1>&2
+	echo "  -S	List of services to reload upon success" 1>&2
+	echo "  -q	Operate in quiet mode" 1>&2
+	echo "  -v	Increase the verbosity" 1>&2
+	echo "  -a	Renew all the hosts configured" 1>&2
 	return 1
 }
 
