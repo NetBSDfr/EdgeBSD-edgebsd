@@ -51,7 +51,7 @@ USER="$(id -un)"
 #load local settings
 [ -f "$SYSCONFDIR/nvmm/$PROGNAME.conf" ] &&
 	. "$SYSCONFDIR/nvmm/$PROGNAME.conf"
-[ -f "$HOME/.config/nvmm/$PROGNAME.conf" ] &&
+[ -n "$HOME" -a -f "$HOME/.config/nvmm/$PROGNAME.conf" ] &&
 	. "$HOME/.config/nvmm/$PROGNAME.conf"
 
 
