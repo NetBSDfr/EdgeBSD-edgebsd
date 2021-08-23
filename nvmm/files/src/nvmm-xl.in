@@ -29,7 +29,13 @@
 
 #variables
 #executables
-ARCH=$(uname -p)
+ARCH=$(uname -m)
+case "$ARCH" in
+	amd64)
+		#XXX for qemu
+		ARCH="x86_64"
+		;;
+esac
 CAT="cat"
 DEBUG=
 MKDIR="mkdir"
