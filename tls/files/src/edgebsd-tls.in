@@ -79,6 +79,14 @@ _error()
 }
 
 
+#info
+_info()
+{
+	echo "$PROGNAME: $@"
+	return 0
+}
+
+
 #edgebsd-tls
 _edgebsd_tls()
 {
@@ -138,6 +146,7 @@ _edgebsd_tls_acme_hostname()
 
 	[ -d "$BASEDIR" ] || $DEBUG $MKDIR -- "$BASEDIR"
 	if [ ! -f "$keyfile" ]; then
+		[ $verbose -ge 2 ] && _info "Creating the account key..."
 		$DEBUG $TOUCH "$keyfile" &&
 		$DEBUG $CHMOD 0600 "$keyfile" &&
 		$DEBUG $OPENSSL genrsa -out "$keyfile" 4096
@@ -221,11 +230,14 @@ _create_hostname()
 
 	[ $user -eq 0 ] && case "$hostname" in
 		www.*)
+			[ $verbose -ge 2 ] && _info "${hostname#www.}:" \
+				" Adding alternate subject..."
 			sign="$sign -addext subjectAltName=DNS:${hostname#www.}"
 			;;
 	esac
 
 	keyfile="$hostname.key"
+	[ $verbose -ge 2 ] && _info "$keyfile: Generating private key..."
 	if [ -f "$keyfile" ]; then
 		if [ $force -eq 0 ]; then
 			_error "$hostname: Private key already generated"
@@ -239,6 +251,7 @@ _create_hostname()
 			return $?
 		fi
 	fi
+	[ $verbose -ge 2 ] && _info "$hostname$ext: Creating certificate..."
 	$DEBUG $OPENSSL req $OPENSSLARGS -new $sign -nodes -sha256 \
 		-newkey "$bits" -keyout "$keyfile" $extensions \
 		-out "$hostname$ext"
