@@ -30,6 +30,7 @@
 #variables
 #executables
 ACME_TINY="acme_tiny"
+ACME="$ACME_TINY"
 CHMOD="chmod"
 DEBUG=
 MKDIR="mkdir -p"
