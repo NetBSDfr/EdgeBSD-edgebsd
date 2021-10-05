@@ -41,21 +41,22 @@ RM="rm -f"
 SERVICE="/usr/sbin/service"
 TOUCH="touch"
 #settings
+PROGNAME="edgebsd-tls"
+VENDOR="EdgeBSD"
+PREFIX="@PREFIX@"
+SYSCONFDIR="@SYSCONFDIR@"
 ACCOUNTKEY="account.key"
 ACMEDIR="/var/www/acme"
+BASEDIR="$SYSCONFDIR/$VENDOR/$PROGNAME"
 OPENSSLARGS=
-OPENSSLCNF="@SYSCONFDIR@/$VENDOR/$PROGNAME/openssl.cnf"
+OPENSSLCNF="$SYSCONFDIR/$VENDOR/$PROGNAME/openssl.cnf"
 [ ! -f "$OPENSSLCNF" -a -d "/etc/ssl" ] && OPENSSLCNF="/etc/ssl/openssl.cnf"
-[ ! -f "$OPENSSLCNF" -a -d "/etc/openssl" ] && OPENSSLCNF="/etc/openssl/openssl.cnf"
+[ ! -f "$OPENSSLCNF" -a -d "/etc/openssl" ] &&
+	OPENSSLCNF="/etc/openssl/openssl.cnf"
 OPENSSL_DAYS=365
 OPENSSL_KEY_SIZE=4096
-PREFIX="@PREFIX@"
-PROGNAME="edgebsd-tls"
 RENEW_HOSTS=
 RENEW_SERVICES=
-SYSCONFDIR="@SYSCONFDIR@"
-VENDOR="EdgeBSD"
-BASEDIR="$SYSCONFDIR/$VENDOR/$PROGNAME"
 
 #load local settings
 [ -f "$SYSCONFDIR/$VENDOR/$PROGNAME.conf" ] &&
