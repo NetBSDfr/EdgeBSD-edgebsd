@@ -41,10 +41,11 @@ RM="rm -f"
 SERVICE="/usr/sbin/service"
 TOUCH="touch"
 #settings
-PROGNAME="edgebsd-tls"
-VENDOR="EdgeBSD"
 PREFIX="@PREFIX@"
+PROGNAME="edgebsd-tls"
 SYSCONFDIR="@SYSCONFDIR@"
+VENDOR="EdgeBSD"
+
 ACCOUNTKEY="account.key"
 ACMEDIR="/var/www/acme"
 BASEDIR="$SYSCONFDIR/$VENDOR/$PROGNAME"
@@ -135,7 +136,7 @@ _edgebsd_tls_acme()
 	done
 	shift $((OPTIND - 1))
 	if [ $# -eq 0 ]; then
-		_usage "acme: At least one hostname is required"
+		_usage "$PROGNAME: At least one hostname is required"
 		return $?
 	fi
 	for hostname in "$@"; do
