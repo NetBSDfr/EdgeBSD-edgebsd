@@ -45,6 +45,7 @@ PREFIX="@PREFIX@"
 PROGNAME="edgebsd-tls"
 SYSCONFDIR="@SYSCONFDIR@"
 VENDOR="EdgeBSD"
+VERBOSE=1
 
 ACCOUNTKEY="account.key"
 ACMEDIR="/var/www/acme"
@@ -152,7 +153,7 @@ _acme_host()
 
 	[ -d "$BASEDIR" ] || $DEBUG $MKDIR -- "$BASEDIR"
 	if [ ! -f "$keyfile" ]; then
-		[ $verbose -ge 2 ] && _info "Creating the account key..."
+		[ $VERBOSE -ge 2 ] && _info "Creating the account key..."
 		$DEBUG $TOUCH "$keyfile" &&
 		$DEBUG $CHMOD 0600 "$keyfile" &&
 		$DEBUG $OPENSSL genrsa -out "$keyfile" 4096
@@ -183,7 +184,6 @@ _edgebsd_tls_create()
 	force=0
 	sign=
 	user=0
-	verbose=1
 
 	while getopts "O:b:d:fqsuv" name; do
 		case "$name" in
@@ -201,7 +201,7 @@ _edgebsd_tls_create()
 				force=1
 				;;
 			q)
-				verbose=0
+				VERBOSE=0
 				;;
 			s)
 				sign="-x509"
@@ -213,7 +213,7 @@ _edgebsd_tls_create()
 				extensions="-extensions usr_cert"
 				;;
 			v)
-				verbose=$((verbose + 1))
+				VERBOSE=$((VERBOSE + 1))
 				;;
 			*)
 				_usage
@@ -241,14 +241,14 @@ _create_hostname()
 
 	[ $user -eq 0 ] && case "$hostname" in
 		www.*)
-			[ $verbose -ge 2 ] && _info "${hostname#www.}:" \
+			[ $VERBOSE -ge 2 ] && _info "${hostname#www.}:" \
 				" Adding alternate subject..."
 			s="$s -addext subjectAltName=DNS:${hostname#www.}"
 			;;
 	esac
 
 	keyfile="$hostname.key"
-	[ $verbose -ge 2 ] && _info "$keyfile: Generating private key..."
+	[ $VERBOSE -ge 2 ] && _info "$keyfile: Generating private key..."
 	if [ -f "$keyfile" ]; then
 		if [ $force -eq 0 ]; then
 			_error "$hostname: Private key already generated"
@@ -262,7 +262,7 @@ _create_hostname()
 			return $?
 		fi
 	fi
-	[ $verbose -ge 2 ] && _info "$hostname$ext: Creating certificate..."
+	[ $VERBOSE -ge 2 ] && _info "$hostname$ext: Creating certificate..."
 	$DEBUG $OPENSSL req $OPENSSLARGS -new $s -nodes -sha256 \
 		-newkey "$bits" -keyout "$keyfile" $extensions \
 		-out "$hostname$ext"
@@ -291,10 +291,10 @@ _edgebsd_tls_renew()
 				all=1
 				;;
 			q)
-				verbose=0
+				VERBOSE=0
 				;;
 			v)
-				verbose=$((verbose + 1))
+				VERBOSE=$((VERBOSE + 1))
 				;;
 			*)
 				_usage
@@ -326,7 +326,7 @@ _edgebsd_tls_renew()
 		return $?
 	fi
 	[ $reload -eq 1 ] && for service in $services; do
-		[ $verbose -ge 2 ] && _info "$service: Reloading service..."
+		[ $VERBOSE -ge 2 ] && _info "$service: Reloading service..."
 		($DEBUG $SERVICE "$service" reload ||
 			$DEBUG $SERVICE "$service" restart)	|| ret=3
 	done
@@ -337,7 +337,7 @@ _renew_host()
 {
 	hostname="$1"
 
-	[ $verbose -ge 2 ] && _info "$hostname: Renewing host..."
+	[ $VERBOSE -ge 2 ] && _info "$hostname: Renewing host..."
 	_acme_host "$hostname"
 }
 
