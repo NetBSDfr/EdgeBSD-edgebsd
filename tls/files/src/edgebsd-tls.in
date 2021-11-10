@@ -121,7 +121,7 @@ _edgebsd_tls_acme()
 	while getopts "O:qv" name; do
 		case "$name" in
 			O)
-				eval "${OPTARG%%=*}"="${OPTARG#*=}"
+				eval "${OPTARG%%=*}='${OPTARG#*=}'"
 				;;
 			q)
 				ACME="$ACME_TINY --quiet"
@@ -190,7 +190,7 @@ _edgebsd_tls_create()
 	while getopts "O:b:d:fqsuv" name; do
 		case "$name" in
 			O)
-				eval "${OPTARG%%=*}"="${OPTARG#*=}"
+				eval "${OPTARG%%=*}='${OPTARG#*=}'"
 				;;
 			b)
 				bits="rsa:$OPTARG"
@@ -284,7 +284,7 @@ _edgebsd_tls_renew()
 	while getopts "O:S:aqv" name; do
 		case "$name" in
 			O)
-				eval "${OPTARG%%=*}"="${OPTARG#*=}"
+				eval "${OPTARG%%=*}='${OPTARG#*=}'"
 				;;
 			S)
 				services="$OPTARG"
