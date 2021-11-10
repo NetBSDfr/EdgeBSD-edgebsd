@@ -1,5 +1,5 @@
 OBJDIR	=
-PREFIX	= /Users/khorben/opt/DeforaOS
+PREFIX	= /usr/local
 DESTDIR	=
 MKDIR	= mkdir -m 0755 -p
 INSTALL	= install

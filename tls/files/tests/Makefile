@@ -1,6 +1,6 @@
 TARGETS	= $(OBJDIR)fixme.log $(OBJDIR)shlint.log $(OBJDIR)tests.log
 OBJDIR	=
-PREFIX	= /Users/khorben/opt/DeforaOS
+PREFIX	= /usr/local
 DESTDIR	=
 RM	= rm -f
 LN	= ln -f

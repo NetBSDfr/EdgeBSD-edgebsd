@@ -2,5 +2,5 @@ PACKAGE="edgebsd-tls"
 VERSION="9"
 VENDOR="EdgeBSD"
 
-PREFIX="/Users/khorben/opt/DeforaOS"
+PREFIX="/usr/local"
 LIBDIR="${PREFIX}/lib"
