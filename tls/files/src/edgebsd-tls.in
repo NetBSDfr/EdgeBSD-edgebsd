@@ -29,7 +29,7 @@
 
 #variables
 #executables
-ACME_TINY="acme_tiny"
+ACME_TINY="acme-tiny-3.8"
 ACME="$ACME_TINY"
 CHMOD="chmod"
 DEBUG=
