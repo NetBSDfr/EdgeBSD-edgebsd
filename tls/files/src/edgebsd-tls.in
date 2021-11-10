@@ -279,7 +279,7 @@ _edgebsd_tls_renew()
 	ret=0
 	all=0
 	reload=0
-	services="$RENEW_SERVICES"
+	services=
 
 	while getopts "O:S:aqv" name; do
 		case "$name" in
@@ -304,6 +304,7 @@ _edgebsd_tls_renew()
 				;;
 		esac
 	done
+	[ -n "$services" ] || services="$RENEW_SERVICES"
 	shift $((OPTIND - 1))
 	if [ $# -eq 0 -a $all -ne 0 ]; then
 		for hostname in $RENEW_HOSTS; do
