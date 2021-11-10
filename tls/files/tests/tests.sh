@@ -30,6 +30,8 @@ PROGNAME="tests.sh"
 DATE="date"
 DEBUG="_debug"
 EDGEBSD_TLS="../src/edgebsd-tls"
+MKTEMP="mktemp"
+RM="/bin/rm -f"
 
 
 #functions
@@ -40,19 +42,48 @@ _tests()
 
 	$DATE
 	echo
-	_tests_usage						|| ret=2
+	_tests_renew "renewal"					|| ret=2
+	_tests_usage "usage"					|| ret=2
 	return $ret
+}
+
+_tests_renew()
+{
+	test="$1"
+
+	echo "$PROGNAME: Testing $test"
+	tmpdir=$($DEBUG $MKTEMP -d)
+	[ $? -eq 0 ] || return 2
+
+	$DEBUG $EDGEBSD_TLS renew -av \
+		-O ACMEDIR="$tmpdir/acme" \
+		-O ACME="/bin/echo" \
+		-O BASEDIR="$tmpdir/basedir" \
+		-O RENEW_HOSTS="www.example.com" \
+		-O RENEW_SERVICES="example-service test-service" \
+		-O SERVICE="/bin/echo" 2>&1
+	res=$?
+	$DEBUG $RM -r -- "$tmpdir"
+	if [ $res -eq 0 ]; then
+		echo "$PROGNAME: $test: OK"
+		return 0
+	else
+		echo "$PROGNAME: $test: FAIL"
+		return 2
+	fi
 }
 
 _tests_usage()
 {
-	echo "$PROGNAME: Testing the usage screen"
+	test="$1"
+
+	echo "$PROGNAME: Testing $test"
 	$DEBUG $EDGEBSD_TLS -? 2>&1
 	if [ $? -eq 1 ]; then
-		echo "$PROGNAME: OK"
+		echo "$PROGNAME: $test: OK"
 		return 0
 	else
-		echo "$PROGNAME: FAIL"
+		echo "$PROGNAME: $test: FAIL"
 		return 2
 	fi
 }
@@ -60,14 +91,14 @@ _tests_usage()
 
 #debug
 _debug()
-{
+{(
 	echo "$@" 1>&3
 	"$@"
 	res=$?
 	#ignore errors when the command is not available
 	[ $res -eq 127 ]					&& return 0
 	return $res
-}
+)}
 
 
 #usage
