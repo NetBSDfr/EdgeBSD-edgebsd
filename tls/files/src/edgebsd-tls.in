@@ -32,7 +32,7 @@
 ACME_TINY="acme-tiny-3.8"
 ACME="$ACME_TINY"
 CHMOD="chmod"
-DEBUG=
+DEBUG="_debug"
 MKDIR="mkdir -p"
 MKTEMP="mktemp"
 MV="mv -f"
@@ -71,7 +71,7 @@ RENEW_SERVICES=
 #debug
 _debug()
 {
-	echo "$@" 1>&2
+	[ $VERBOSE -ge 2 ] && echo "$@" 1>&2
 	"$@"
 }
 
@@ -125,9 +125,11 @@ _edgebsd_tls_acme()
 				;;
 			q)
 				ACME="$ACME_TINY --quiet"
+				VERBOSE=0
 				;;
 			v)
 				ACME="$ACME_TINY"
+				VERBOSE=$((VERBOSE + 1))
 				;;
 			*)
 				_usage
