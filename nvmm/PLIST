@@ -3,3 +3,5 @@ man/html8/nvmm-xl.html
 man/man8/nvmm-xl.8
 sbin/edgebsd-gueststat
 sbin/nvmm-xl
+share/examples/edgebsd-nvmm/template.netbsd.amd64
+@pkgdir share/doc/edgebsd-nvmm

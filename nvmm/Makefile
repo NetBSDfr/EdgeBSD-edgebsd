@@ -2,7 +2,7 @@
 
 PKGNAME=	edgebsd-nvmm-${VERSION}
 VERSION=	9
-PKGREVISION=	11
+PKGREVISION=	12
 CATEGORIES=	edgebsd
 
 MAINTAINER=	khorben@edgebsd.org
@@ -24,6 +24,11 @@ TEST_TARGET=	tests
 DEPENDS+=	qemu-[0-9]*:../../emulators/qemu
 DEPENDS+=	screen-[0-9]*:../../misc/screen
 
+EGDIR=		share/examples/edgebsd-nvmm
+CONF_FILES=	${EGDIR}/template.netbsd.amd64 \
+		${PKG_SYSCONFDIR}/nvmm/template.netbsd.amd64
+INSTALLATION_DIRS+=	${EGDIR}
+
 .include "../../mk/bsd.prefs.mk"
 
 .if ${PKGMANDIR} != "share/man"
@@ -32,5 +37,9 @@ MAKE_FLAGS+=	MANDIR=${DESTDIR:Q}${PREFIX:Q}/${PKGMANDIR:Q}
 
 do-extract:
 	${CP} -R -- ${FILESDIR} ${WRKSRC}
+
+post-install:
+	${MV} ${DESTDIR}${PREFIX}/share/doc/edgebsd-nvmm/template.netbsd.amd64 \
+		${DESTDIR}${PREFIX}/${EGDIR}
 
 .include "../../mk/bsd.pkg.mk"
