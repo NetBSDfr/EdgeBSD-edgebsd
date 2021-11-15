@@ -1,7 +1,10 @@
-TARGETS	= $(OBJDIR)nvmm-xl.8 $(OBJDIR)nvmm-xl.html
 OBJDIR	=
 PREFIX	= /usr/local
 DESTDIR	=
+MKDIR	= mkdir -m 0755 -p
+INSTALL	= install
+RM	= rm -f
+TARGETS	= $(OBJDIR)nvmm-xl.8 $(OBJDIR)nvmm-xl.html
 RM	= rm -f
 LN	= ln -f
 MKDIR	= mkdir -m 0755 -p
@@ -26,9 +29,12 @@ distclean: clean
 install: all
 	./docbook.sh -P "$(DESTDIR)$(PREFIX)" -i -- "$(OBJDIR)nvmm-xl.8"
 	./docbook.sh -P "$(DESTDIR)$(PREFIX)" -i -- "$(OBJDIR)nvmm-xl.html"
+	$(MKDIR) $(DESTDIR)$(PREFIX)/share/doc/edgebsd-nvmm
+	$(INSTALL) -m 0644 template.netbsd.amd64 $(DESTDIR)$(PREFIX)/share/doc/edgebsd-nvmm/template.netbsd.amd64
 
 uninstall:
 	./docbook.sh -P "$(DESTDIR)$(PREFIX)" -u -- "nvmm-xl.8"
 	./docbook.sh -P "$(DESTDIR)$(PREFIX)" -u -- "nvmm-xl.html"
+	$(RM) -- $(DESTDIR)$(PREFIX)/share/doc/edgebsd-nvmm/template.netbsd.amd64
 
 .PHONY: all clean distclean install uninstall

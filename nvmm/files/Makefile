@@ -44,6 +44,7 @@ dist:
 		$(PACKAGE)-$(VERSION)/doc/nvmm-xl.css.xml \
 		$(PACKAGE)-$(VERSION)/doc/nvmm-xl.xml \
 		$(PACKAGE)-$(VERSION)/doc/manual.css.xml \
+		$(PACKAGE)-$(VERSION)/doc/template.netbsd.amd64 \
 		$(PACKAGE)-$(VERSION)/doc/project.conf \
 		$(PACKAGE)-$(VERSION)/src/Makefile \
 		$(PACKAGE)-$(VERSION)/src/edgebsd-gueststat \
