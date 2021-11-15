@@ -1,0 +1,4 @@
+name=@@HOSTNAME@@.@@DOMAINNAME@@
+vcpus=2
+memory=256M
+args=-object rng-random,filename=/dev/urandom,id=viornd0 -device virtio-rng-pci,rng=viornd0 -netdev tap,id=tapX,ifname=tapX,script=no,downscript=no -device virtio-net,netdev=tapX,mac=@@MACADDRESS@@ -drive file=/home/xen/hosts/@@DOMAINNAME@@/@@HOSTNAME@@/hd0.img,if=none,format=raw,id=hd0 -device virtio-blk-pci,drive=hd0
