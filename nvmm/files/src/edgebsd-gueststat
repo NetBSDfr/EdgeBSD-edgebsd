@@ -402,7 +402,7 @@ XEN3_DOM0	xen"
 	case "$HYPERVISOR" in
 		nvmm)
 			INSTALLBOOT_OPTIONS="-o console=com0,speed=115200"
-			[ -n "$ROOT_DEVICE" ] || ROOT_DEVICE="wd0"
+			[ -n "$ROOT_DEVICE" ] || ROOT_DEVICE="ld0"
 			;;
 		xen)
 			[ -n "$ROOT_DEVICE" ] || ROOT_DEVICE="xbd0"
