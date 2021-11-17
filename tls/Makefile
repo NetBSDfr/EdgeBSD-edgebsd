@@ -2,7 +2,7 @@
 
 PKGNAME=	edgebsd-tls-${VERSION}
 VERSION=	9
-PKGREVISION=	4
+PKGREVISION=	5
 CATEGORIES=	edgebsd
 
 MAINTAINER=	khorben@edgebsd.org
@@ -18,6 +18,9 @@ MAKE_FLAGS+=	PREFIX=${PREFIX:Q}
 
 TEST_TARGET=	tests
 
+DEPENDS+=	mozilla-rootcerts-[0-9]*:../../security/mozilla-rootcerts
+DEPENDS+=	${PYPKGPREFIX}-acme-tiny-[0-9]*:../../security/py-acme-tiny
+
 .include "../../mk/bsd.prefs.mk"
 
 .if ${PKGMANDIR} != "share/man"
@@ -27,4 +30,5 @@ MAKE_FLAGS+=	MANDIR=${DESTDIR:Q}${PREFIX:Q}/${PKGMANDIR:Q}
 do-extract:
 	${CP} -R -- ${FILESDIR} ${WRKSRC}
 
+.include "../../lang/python/pyversion.mk"
 .include "../../mk/bsd.pkg.mk"
