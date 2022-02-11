@@ -1,5 +1,5 @@
 #!/bin/sh
-#Copyright (c) 2021 Pierre Pronchery <khorben@edgebsd.org>
+#Copyright (c) 2021-2022 Pierre Pronchery <khorben@edgebsd.org>
 #
 #This code is derived from software contributed to the EdgeBSD Project
 #by Pierre Pronchery <khorben@edgebsd.org>
