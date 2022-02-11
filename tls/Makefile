@@ -2,7 +2,7 @@
 
 PKGNAME=	edgebsd-tls-${VERSION}
 VERSION=	9
-PKGREVISION=	5
+PKGREVISION=	6
 CATEGORIES=	edgebsd
 
 MAINTAINER=	khorben@edgebsd.org
@@ -21,6 +21,9 @@ TEST_TARGET=	tests
 
 DEPENDS+=	mozilla-rootcerts-[0-9]*:../../security/mozilla-rootcerts
 DEPENDS+=	${PYPKGPREFIX}-acme-tiny-[0-9]*:../../security/py-acme-tiny
+
+USE_TOOLS+=	grep
+USE_TOOLS+=	sed
 
 .include "../../mk/bsd.prefs.mk"
 
