@@ -127,6 +127,7 @@ _subst()
 			-e "s;@LIBEXECDIR@;$LIBEXECDIR;g" \
 			-e "s;@MANDIR@;$MANDIR;g" \
 			-e "s;@PWD@;$PWD;g" \
+			-e "s;@PYVERSSUFFIX@;$PYVERSSUFFIX;g" \
 			-e "s;@SYSCONFDIR@;$SYSCONFDIR;g" \
 			-- "$source" > "$target"
 		if [ $? -ne 0 ]; then
