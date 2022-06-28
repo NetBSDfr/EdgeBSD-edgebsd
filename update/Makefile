@@ -10,6 +10,9 @@ HOMEPAGE=	https://www.edgebsd.org/
 COMMENT=	Update script for EdgeBSD
 LICENSE=	modified-bsd
 
+TOOL_DEPENDS+=	libxslt-[0-9]*:../../textproc/libxslt
+BUILD_DEPENDS+=	docbook-xsl-[0-9]*:../../textproc/docbook-xsl
+
 MAKE_FLAGS+=	PREFIX=${PREFIX:Q}
 
 RCD_SCRIPTS=	edgebsd-update
