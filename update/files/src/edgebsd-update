@@ -729,6 +729,7 @@ _progress()
 	#only use progress(1) if in interactive and verbose mode
 	if [ -n "$PS1" -a $VERBOSE -ge 1 ]; then
 		$DEBUG $PROGRESS -p "$prefix" $options "$filename" -- "$@"
+		echo
 	else
 		$DEBUG $cat -- "$filename" | "$@"
 	fi
