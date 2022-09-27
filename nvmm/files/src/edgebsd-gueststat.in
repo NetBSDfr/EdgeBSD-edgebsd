@@ -667,13 +667,7 @@ _gueststat_macaddress()
 	hash1="${hash1%$hash2}"
 	hash3="${hash2#??}" 1>&2
 	hash2="${hash2%$hash3}"
-	hash4="${hash3#??}" 1>&2
-	hash3="${hash3%$hash4}"
-	hash5="${hash4#??}" 1>&2
-	hash4="${hash4%$hash5}"
-	hash6="${hash5#??}" 1>&2
-	hash5="${hash5%$hash6}"
-	$ECHO -n "00:0e:22:$hash3:$hash4:$hash5"
+	$ECHO -n "00:0e:22:$hash0:$hash1:$hash2"
 }
 
 _gueststat_mount()
