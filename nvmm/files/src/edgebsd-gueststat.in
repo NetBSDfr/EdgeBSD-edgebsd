@@ -36,6 +36,12 @@ CHOWN="chown"
 DD="dd"
 DEBUG="_debug"
 DISKLABEL="disklabel"
+ECHO="echo"
+case "$(uname -s)" in
+	Darwin)
+		ECHO="/bin/echo"
+		;;
+esac
 FDISK="fdisk"
 INSTALL="install"
 INSTALLBOOT="installboot"
@@ -654,7 +660,7 @@ _gueststat_macaddress()
 	hostname="$1"
 	domain="$2"
 
-	hash="$(echo -n "$hostname.$domain" | $SHA1)"
+	hash="$($ECHO -n "$hostname.$domain" | $SHA1)"
 	hash1="${hash#??}" 1>&2
 	hash0="${hash%$hash1}"
 	hash2="${hash1#??}" 1>&2
@@ -667,7 +673,7 @@ _gueststat_macaddress()
 	hash4="${hash4%$hash5}"
 	hash6="${hash5#??}" 1>&2
 	hash5="${hash5%$hash6}"
-	echo -n "00:0e:22:$hash3:$hash4:$hash5"
+	$ECHO -n "00:0e:22:$hash3:$hash4:$hash5"
 }
 
 _gueststat_mount()
