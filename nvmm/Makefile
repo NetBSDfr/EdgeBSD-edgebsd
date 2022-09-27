@@ -26,7 +26,7 @@ DEPENDS+=	screen-[0-9]*:../../misc/screen
 
 EGDIR=		share/examples/edgebsd-nvmm
 CONF_FILES=	${EGDIR}/template.netbsd.amd64 \
-		${PKG_SYSCONFDIR}/nvmm/template.netbsd.amd64
+		${PKG_SYSCONFDIR}/EdgeBSD/edgebsd-nvmm/hosts/template.netbsd.amd64
 INSTALLATION_DIRS+=	${EGDIR}
 
 .include "../../mk/bsd.prefs.mk"
