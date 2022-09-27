@@ -86,7 +86,7 @@ procfs		/proc	procfs	rw
 tmpfs		/var/shm	tmpfs	rw,-m1777,-sram%25"
 NVMM_HOMEDIR="/home/xen"
 NVMM_BRIDGEIF="bridge0"
-NVMM_SYSCONFDIR="@SYSCONFDIR@/nvmm"
+NVMM_SYSCONFDIR="@SYSCONFDIR@/$EDGEBSD_VENDOR/$PACKAGE/hosts"
 PACKAGES="vim"
 PROGNAME="edgebsd-gueststat"
 ROOT_DEVICE=
