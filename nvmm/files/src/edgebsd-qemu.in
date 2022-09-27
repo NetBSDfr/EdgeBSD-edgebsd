@@ -1,6 +1,9 @@
 #!/bin/sh
 #Copyright (c) 2022 Pierre Pronchery <khorben@EdgeBSD.org>
 #This file is part of EdgeBSD NVMM
+#This code is derived from software contributed to the EdgeBSD Project
+#by Pierre Pronchery <khorben@EdgeBSD.org>
+#
 #Redistribution and use in source and binary forms, with or without
 #modification, are permitted provided that the following conditions are met:
 #
