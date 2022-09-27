@@ -36,6 +36,7 @@ DEBUG="_debug"
 IFCONFIG="/sbin/ifconfig"
 MKDIR="mkdir -p"
 QEMU=
+RM="rm -f"
 RMDIR="rmdir"
 UNAME="uname"
 #settings
@@ -49,8 +50,10 @@ QEMU_MACHINE="accel=nvmm"
 QEMU_MEMORY="128M"
 QEMU_NAME=
 QEMU_NETWORK_INTERFACES=
+QEMU_SOCKET=
 QEMU_USER=
 QEMU_VCPUS=1
+RUNDIR="/var/run/nvmm"
 SYSCONFDIR="@SYSCONFDIR@"
 VERBOSE=1
 
@@ -114,6 +117,22 @@ _edgebsd_qemu()
 		_qemu_run
 }
 
+_qemu_cleanup()
+{
+	#cleanup: network interfaces
+	[ -n "$QEMU_NETWORK_INTERFACES" ] && for interface in $QEMU_NETWORK_INTERFACES; do
+		$DEBUG $IFCONFIG "$interface" destroy
+	done
+
+	#cleanup: UNIX socket
+	if [ -n "$QEMU_SOCKET" ]; then
+		$DEBUG $RM -- "$QEMU_SOCKET"
+	fi
+
+	#cleanup: host directory
+	$DEBUG $RMDIR -- "${QEMU_SOCKET%/*}"
+}
+
 _qemu_parse()
 {
 	hostname="$1"
@@ -121,7 +140,16 @@ _qemu_parse()
 	context=
 
 	#set default values
-	[ -z "$QEMU_DEFAULT_ARGS" ] && QEMU_DEFAULT_ARGS="-object rng-random,filename=/dev/urandom,id=viornd0 -device virtio-rng-pci,rng=viornd0"
+	if [ -z "$QEMU_DEFAULT_ARGS" ]; then
+		[ -n "$QEMU_SOCKET" ] || QEMU_SOCKET="$RUNDIR/$hostname/socket"
+		QEMU_DEFAULT_ARGS="-nodefaults" \
+			" -chardev stdio,id=s1,signal=off" \
+			" -serial none -device isa-serial,chardev=s1" \
+			" -chardev socket,id=mon0,path=$QEMU_SOCKET,server,nowait" \
+			" -mon chardev=mon0,mode=readline" \
+			" -object rng-random,filename=/dev/urandom,id=viornd0" \
+			" -device virtio-rng-pci,rng=viornd0"
+	fi
 	[ -z "$QEMU_NAME" ] && QEMU_NAME="$hostname"
 
 	drive_driver=
@@ -171,8 +199,6 @@ _qemu_parse()
 
 _qemu_run()
 {
-	#$DEBUG $MKDIR
-
 	#determine the path to QEMU
 	if [ -z "$QEMU" ]; then
 		[ -z "$QEMU_ARCH" ] && QEMU_ARCH="$($UNAME -m)"
@@ -181,7 +207,7 @@ _qemu_run()
 				QEMU_ARCH="x86_64"
 				;;
 		esac
-		QEMU="$BINDIR/qemu-system-$QEMU_ARCH -nodefaults"
+		QEMU="$BINDIR/qemu-system-$QEMU_ARCH"
 	fi
 
 	#determine QEMU parameters
@@ -191,20 +217,20 @@ _qemu_run()
 	[ -n "$QEMU_CHROOT" ] && QEMU="$QEMU -chroot $QEMU_CHROOT"
 	[ $QEMU_CPUS -gt 1 ] && QEMU="$QEMU -smp $QEMU_CPUS"
 
+	#lock if necessary
+	if [ -n "$QEMU_SOCKET" ]; then
+		$DEBUG $MKDIR -m 0700 "${QEMU_SOCKET%/*}"
+		if [ $? -ne 0 ]; then
+			_error "$QEMU_SOCKET: Could not create the socket"
+			return $?
+		fi
+	fi
+
 	#run QEMU
 	$DEBUG $QEMU -m "$QEMU_MEMORY" $QEMU_DEFAULT_ARGS $QEMU_ARGS
 	ret=$?
 
-	#cleanup
-	#cleanup: network interfaces
-	[ -n "$QEMU_NETWORK_INTERFACES" ] && for interface in $QEMU_NETWORK_INTERFACES; do
-		$DEBUG $IFCONFIG "$interface" destroy
-	done
-	#cleanup: UNIX socket
-	#FIXME implement
-	#cleanup: host directory
-	#FIXME implement
-	$DEBUG $RMDIR -- "$HOST_DIRECTORY"
+	_qemu_cleanup
 
 	return $ret
 }

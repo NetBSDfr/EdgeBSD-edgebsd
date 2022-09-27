@@ -33,10 +33,10 @@ PACKAGE="edgebsd-nvmm"
 #executables
 CAT="cat"
 DEBUG=
+EDGEBSD_QEMU="@PREFIX@/libexec/$EDGEBSD_VENDOR/$PACKAGE/edgebsd-qemu"
 MKDIR="mkdir"
 NC="nc"
 NVMMCTL="/usr/sbin/nvmmctl"
-QEMU="@PREFIX@/libexec/$EDGEBSD_VENDOR/$PACKAGE/edgebsd-qemu"
 SCREEN="@BINDIR@/screen"
 #settings
 CHROOTDIR=
@@ -44,7 +44,6 @@ DEVNULL="/dev/null"
 PREFIX="@PREFIX@"
 PROGNAME="nvmm-xl"
 RUNAS=
-RUNDIR="/var/run/nvmm"
 SCREENDIR="/tmp/screens"
 SYSCONFDIR="@SYSCONFDIR@"
 USER="$(id -un)"
@@ -180,85 +179,13 @@ _nvmm_xl_create()
 	qemu_machine="accel=nvmm"
 	qemu_memory="128M"
 	qemu_vcpus="1"
-	_create_parse "$filename"				|| return 2
 
 	session="_nvmm-$domain"
-	socket="$RUNDIR/$domain"
 	screen_args=
 	[ $console -eq 0 ] && screen_args="-d -m"
 
-	$DEBUG $MKDIR -p -m 0700 "${socket%/*}"
-	if [ $? -ne 0 ]; then
-		_error "$socket: Could not create the socket"
-		return $?
-	fi
-	if [ -S "$socket" ]; then
-		_error "$domain: Virtual Machine already running"
-		return $?
-	fi
 	$DEBUG $SCREEN -S "$session" $screen_args \
-		$QEMU -name "$domain" -machine "$qemu_machine" -nographic \
-		-chardev stdio,id=s1,signal=off \
-		-serial none -device "isa-serial,chardev=s1" \
-		-chardev "socket,id=mon0,path=$socket,server,nowait" \
-		-mon "chardev=mon0,mode=readline" \
-		-m "$qemu_memory" -smp "$qemu_vcpus" $qemu_args
-}
-
-_create_parse()
-{
-	lineno=0
-	while read line; do
-		lineno=$((lineno + 1))
-		case "$line" in
-			"#"*)
-				;;
-			"["*"]")
-				section="${line#?}"
-				section="${section%?}"
-				;;
-			*=*)
-				variable="${line%%=*}"
-				value="${line#*=}"
-				#TODO escape whitespaces when adding $qemu_args
-				case "$section::$variable" in
-					"::args")
-						qemu_args="$qemu_args $value"
-						;;
-					"::extra")
-						qemu_args="$qemu_args -append $value"
-						;;
-					"::kernel")
-						qemu_args="$qemu_args -kernel $value"
-						;;
-					"::machine")
-						qemu_machine="$value"
-						;;
-					"::memory")
-						qemu_memory="$value"
-						;;
-					"::name")
-						#FIXME validate (no "/")
-						domain="$value"
-						;;
-					"::ramdisk")
-						qemu_args="$qemu_args -initrd $value"
-						;;
-					"::vcpus")
-						qemu_vcpus="$value"
-						;;
-					*)
-						_error "$section::$variable: Unknown variable"
-						return $?
-						;;
-				esac
-				;;
-			*)
-				_error "$1:$lineno: Parse error"
-				return $?
-				;;
-		esac
-	done < "$1"
+		$EDGEBSD_QEMU "$domain" "$filename"
 }
 
 
