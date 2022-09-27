@@ -1,4 +1,4 @@
-TARGETS	= $(OBJDIR)edgebsd-qemu $(OBJDIR)nvmm-xl
+TARGETS	= $(OBJDIR)edgebsd-gueststat $(OBJDIR)edgebsd-qemu $(OBJDIR)nvmm-xl
 OBJDIR	=
 PREFIX	= /usr/local
 DESTDIR	=
@@ -10,6 +10,9 @@ INSTALL	= install
 
 all: $(TARGETS)
 
+$(OBJDIR)edgebsd-gueststat: edgebsd-gueststat.in ../tools/subst.sh
+	../tools/subst.sh -P "$(PREFIX)" -- "$(OBJDIR)edgebsd-gueststat"
+
 $(OBJDIR)edgebsd-qemu: edgebsd-qemu.in ../tools/subst.sh
 	../tools/subst.sh -P "$(PREFIX)" -- "$(OBJDIR)edgebsd-qemu"
 
@@ -17,6 +20,7 @@ $(OBJDIR)nvmm-xl: nvmm-xl.in ../tools/subst.sh
 	../tools/subst.sh -P "$(PREFIX)" -- "$(OBJDIR)nvmm-xl"
 
 clean:
+	../tools/subst.sh -c -P "$(PREFIX)" -- "$(OBJDIR)edgebsd-gueststat"
 	../tools/subst.sh -c -P "$(PREFIX)" -- "$(OBJDIR)edgebsd-qemu"
 	../tools/subst.sh -c -P "$(PREFIX)" -- "$(OBJDIR)nvmm-xl"
 
@@ -24,10 +28,12 @@ distclean: clean
 	$(RM) -- $(TARGETS)
 
 install: all
+	../tools/subst.sh -P "$(DESTDIR)$(PREFIX)/sbin" -i -- "$(OBJDIR)edgebsd-gueststat"
 	../tools/subst.sh -P "$(DESTDIR)$(PREFIX)/libexec/EdgeBSD/edgebsd-nvmm" -i -- "$(OBJDIR)edgebsd-qemu"
 	../tools/subst.sh -P "$(DESTDIR)$(PREFIX)/sbin" -i -- "$(OBJDIR)nvmm-xl"
 
 uninstall:
+	../tools/subst.sh -P "$(DESTDIR)$(PREFIX)/sbin" -u -- "edgebsd-gueststat"
 	../tools/subst.sh -P "$(DESTDIR)$(PREFIX)/libexec/EdgeBSD/edgebsd-nvmm" -u -- "edgebsd-qemu"
 	../tools/subst.sh -P "$(DESTDIR)$(PREFIX)/sbin" -u -- "nvmm-xl"
 
