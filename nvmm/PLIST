@@ -1,4 +1,5 @@
 @comment $NetBSD$
+libexec/EdgeBSD/edgebsd-nvmm/edgebsd-qemu
 man/html8/nvmm-xl.html
 man/man8/nvmm-xl.8
 sbin/edgebsd-gueststat
