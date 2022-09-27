@@ -1,5 +1,5 @@
 #!/bin/sh
-#Copyright (c) 2019-2021 Pierre Pronchery <khorben@edgebsd.org>
+#Copyright (c) 2019-2022 Pierre Pronchery <khorben@EdgeBSD.org>
 #This file is part of EdgeBSD NVMM
 #Redistribution and use in source and binary forms, with or without
 #modification, are permitted provided that the following conditions are met:
@@ -24,6 +24,9 @@
 
 
 #variables
+#essential
+EDGEBSD_VENDOR="EdgeBSD"
+PACKAGE="edgebsd-nvmm"
 #executables
 CAT="cat"
 CHOWN="chown"
@@ -61,7 +64,6 @@ DESTDIR=
 DEVZERO="/dev/zero"
 DIRECTORIES=
 EDGEBSD_MIRROR=
-EDGEBSD_VENDOR="EdgeBSD"
 FORCE=0
 GROUPS=
 HYPERVISOR=
@@ -75,16 +77,15 @@ procfs		/proc	procfs	rw
 tmpfs		/var/shm	tmpfs	rw,-m1777,-sram%25"
 NVMM_HOMEDIR="/home/xen"
 NVMM_BRIDGEIF="bridge0"
-NVMM_SYSCONFDIR="/usr/pkg/etc/nvmm"
+NVMM_SYSCONFDIR="@SYSCONFDIR@/nvmm"
 PACKAGES="vim"
-PREFIX="/usr/local"
 PROGNAME="edgebsd-gueststat"
 ROOT_DEVICE=
 SERVICES="dhcpcd	YES	-qb
 inetd	NO"
 SETEXT=
 SETS=
-SYSCONFDIR="$PREFIX/etc"
+SYSCONFDIR="@SYSCONFDIR@"
 SYSCTL_BOOTTIME="net.inet.ip.random_id=1"
 TIMEZONE="UTC"
 USERMGMT_SKEL_DIR="/etc/skel"
@@ -95,10 +96,10 @@ XEN_BRIDGEIF="bridge0"
 XEN_SYSCONFDIR="/usr/pkg/etc/xen"
 
 #load local settings
-[ -f "$SYSCONFDIR/$EDGEBSD_VENDOR/$PROGNAME.conf" ] &&
-	. "$SYSCONFDIR/$EDGEBSD_VENDOR/$PROGNAME.conf"
-[ -f "$HOME/.config/$EDGEBSD_VENDOR/$PROGNAME.conf" ] &&
-	. "$HOME/.config/$EDGEBSD_VENDOR/$PROGNAME.conf"
+[ -f "$SYSCONFDIR/$EDGEBSD_VENDOR/$PACKAGE/$PROGNAME.conf" ] &&
+	. "$SYSCONFDIR/$EDGEBSD_VENDOR/$PACKAGE/$PROGNAME.conf"
+[ -f "$HOME/.config/$EDGEBSD_VENDOR/$PACKAGE/$PROGNAME.conf" ] &&
+	. "$HOME/.config/$EDGEBSD_VENDOR/$PACKAGE/$PROGNAME.conf"
 
 
 #functions

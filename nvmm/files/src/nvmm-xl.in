@@ -28,20 +28,16 @@
 
 
 #variables
+#essential
+EDGEBSD_VENDOR="EdgeBSD"
+PACKAGE="edgebsd-nvmm"
 #executables
-ARCH=$(uname -m)
-case "$ARCH" in
-	amd64)
-		#XXX for qemu
-		ARCH="x86_64"
-		;;
-esac
 CAT="cat"
 DEBUG=
 MKDIR="mkdir"
 NC="nc"
 NVMMCTL="/usr/sbin/nvmmctl"
-QEMU="@BINDIR@/qemu-system-$ARCH"
+QEMU="@PREFIX@/libexec/$EDGEBSD_VENDOR/$PACKAGE/edgebsd-qemu"
 SCREEN="@BINDIR@/screen"
 #settings
 CHROOTDIR=
@@ -55,10 +51,10 @@ SYSCONFDIR="@SYSCONFDIR@"
 USER="$(id -un)"
 
 #load local settings
-[ -f "$SYSCONFDIR/nvmm/$PROGNAME.conf" ] &&
-	. "$SYSCONFDIR/nvmm/$PROGNAME.conf"
-[ -n "$HOME" -a -f "$HOME/.config/nvmm/$PROGNAME.conf" ] &&
-	. "$HOME/.config/nvmm/$PROGNAME.conf"
+[ -f "$SYSCONFDIR/$EDGEBSD_VENDOR/$PACKAGE/$PROGNAME.conf" ] &&
+	. "$SYSCONFDIR/$EDGEBSD_VENDOR/$PACKAGE/$PROGNAME.conf"
+[ -n "$HOME" -a -f "$HOME/.config/$EDGEBSD_VENDOR/$PACKAGE/$PROGNAME.conf" ] &&
+	. "$HOME/.config/$EDGEBSD_VENDOR/$PACKAGE/$PROGNAME.conf"
 
 
 #functions
