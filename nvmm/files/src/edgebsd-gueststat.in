@@ -293,7 +293,7 @@ _gueststat_create_hostname()
 	[ $? -eq 0 -a -n "$filename" ]				|| return 2
 	[ -z "$HYPERVISOR" ] || case "$HYPERVISOR" in
 		nvmm|xen)
-			_gueststat_create_vm_$HYPERVISOR		|| return 2
+			_gueststat_create_vm_$HYPERVISOR	|| return 2
 			;;
 		*)
 			_error "$HYPERVISOR: Unsupported hypervisor"
