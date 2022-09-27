@@ -33,23 +33,34 @@ PACKAGE="edgebsd-nvmm"
 #executables
 BRCONFIG="/sbin/brconfig"
 DEBUG="_debug"
+ECHO="echo"
+case "$(uname -s)" in
+	Darwin)
+		ECHO="/bin/echo"
+		;;
+esac
 IFCONFIG="/sbin/ifconfig"
+MAKEDEV="/dev/MAKEDEV"
 MKDIR="mkdir -p"
 QEMU=
 RM="rm -f"
 RMDIR="rmdir"
+SEQ="seq"
+SHA1="sha1"
 UNAME="uname"
 #settings
 BINDIR="@BINDIR@"
+DEVNULL="/dev/null"
 DRYRUN=0
 PROGNAME="edgebsd-qemu"
 QEMU_ARGS=
 QEMU_CHROOT=
 QEMU_DEFAULT_ARGS=
 QEMU_MACHINE="accel=nvmm"
-QEMU_MEMORY="128M"
+QEMU_MEMORY=
 QEMU_NAME=
 QEMU_NETWORK_INTERFACES=
+QEMU_NETWORK_MAX=255
 QEMU_SOCKET=
 QEMU_USER=
 QEMU_VCPUS=1
@@ -133,6 +144,44 @@ _qemu_cleanup()
 	$DEBUG $RMDIR -- "${QEMU_SOCKET%/*}"
 }
 
+_qemu_network_interface()
+{
+	for i in $($SEQ 0 $QEMU_NETWORK_MAX); do
+		interface="tap$i"
+		device="/dev/$interface"
+
+		if [ ! -c "$device" ]; then
+			(cd "${device%/*}" && $DEBUG $MAKEDEV "${device##*/}") 2> "$DEVNULL"
+			if [ $? -ne 0 ]; then
+				_error "$device: Could not create device node"
+				return $?
+			fi
+		fi
+		$DEBUG $IFCONFIG "$interface" create 2> "$DEVNULL"
+		if [ $? -eq 0 ]; then
+			$ECHO -n "$interface"
+			return 0
+		fi
+	done
+	_error "Could not create network interface"
+	return $?
+}
+
+_qemu_network_macaddress()
+{
+	hostname="$1"
+	interface="$2"
+
+	hash="$($ECHO -n "$hostname.$interface" | $SHA1)"
+	hash1="${hash#??}" 1>&2
+	hash0="${hash%$hash1}"
+	hash2="${hash1#??}" 1>&2
+	hash1="${hash1%$hash2}"
+	hash3="${hash2#??}" 1>&2
+	hash2="${hash2%$hash3}"
+	$ECHO -n "00:0e:22:$hash0:$hash1:$hash2"
+}
+
 _qemu_parse()
 {
 	hostname="$1"
@@ -142,13 +191,13 @@ _qemu_parse()
 	#set default values
 	if [ -z "$QEMU_DEFAULT_ARGS" ]; then
 		[ -n "$QEMU_SOCKET" ] || QEMU_SOCKET="$RUNDIR/$hostname/socket"
-		QEMU_DEFAULT_ARGS="-nodefaults" \
-			" -chardev stdio,id=s1,signal=off" \
-			" -serial none -device isa-serial,chardev=s1" \
-			" -chardev socket,id=mon0,path=$QEMU_SOCKET,server,nowait" \
-			" -mon chardev=mon0,mode=readline" \
-			" -object rng-random,filename=/dev/urandom,id=viornd0" \
-			" -device virtio-rng-pci,rng=viornd0"
+		QEMU_DEFAULT_ARGS="-nodefaults -nographic\
+ -chardev stdio,id=s1,signal=off\
+ -serial none -device isa-serial,chardev=s1\
+ -chardev socket,id=mon0,path=$QEMU_SOCKET,server=on,wait=off\
+ -mon chardev=mon0,mode=readline\
+ -object rng-random,filename=/dev/urandom,id=viornd0\
+ -device virtio-rng-pci,rng=viornd0"
 	fi
 	[ -z "$QEMU_NAME" ] && QEMU_NAME="$hostname"
 
@@ -160,6 +209,7 @@ _qemu_parse()
 	network_bridge=
 	network_driver=
 	network_id=
+	network_interface=
 	network_mac=
 	network_on_down="no"
 	network_on_up="no"
@@ -177,6 +227,10 @@ _qemu_parse()
 				#change of section
 				context="${line%]*}"
 				context="${context#[}"
+
+				#signal the new context
+				_qemu_set "$context" "" ""
+				[ $? -eq 0 ] || return 2
 				;;
 			*=*)
 				#variable definition
@@ -216,6 +270,7 @@ _qemu_run()
 	[ -n "$QEMU_USER" ] && QEMU="$QEMU -runas $QEMU_USER"
 	[ -n "$QEMU_CHROOT" ] && QEMU="$QEMU -chroot $QEMU_CHROOT"
 	[ $QEMU_CPUS -gt 1 ] && QEMU="$QEMU -smp $QEMU_CPUS"
+	[ -n "$QEMU_MEMORY" ] && QEMU="$QEMU -m $QEMU_MEMORY"
 
 	#lock if necessary
 	if [ -n "$QEMU_SOCKET" ]; then
@@ -227,7 +282,7 @@ _qemu_run()
 	fi
 
 	#run QEMU
-	$DEBUG $QEMU -m "$QEMU_MEMORY" $QEMU_DEFAULT_ARGS $QEMU_ARGS
+	$DEBUG $QEMU $QEMU_DEFAULT_ARGS $QEMU_ARGS
 	ret=$?
 
 	_qemu_cleanup
@@ -241,7 +296,6 @@ _qemu_set()
 	name="$2"
 	value="$3"
 
-	echo "DEBUG: [$context] $name=$value" 1>&2
 	if [ -z "$context" ]; then
 		case "$name" in
 			arch)
@@ -295,6 +349,9 @@ _qemu_set()
 			id)
 				drive_id="$value"
 				;;
+			"")
+				#XXX ignore
+				;;
 			*)
 				_error "$name: unsupported parameter in [drive::$drive_id]"
 				return $?
@@ -316,6 +373,9 @@ _qemu_set()
 			id)
 				network_id="$value"
 				;;
+			interface)
+				network_interface="$value"
+				;;
 			mac)
 				network_mac="$value"
 				;;
@@ -328,6 +388,9 @@ _qemu_set()
 			type)
 				network_type="$value"
 				;;
+			"")
+				#XXX ignore
+				;;
 			*)
 				_error "$name: unsupported parameter in [network::$network_id]"
 				return $?
@@ -337,7 +400,7 @@ _qemu_set()
 		_error "$context: unsupported section"
 		return $?
 	fi
-	if [ "$oldcontext" != "${context%%::*}" ]; then
+	if [ "$oldcontext" != "$context" ]; then
 		case "${oldcontext%%::*}" in
 			drive)
 				if [ -z "$drive_id" ]; then
@@ -351,7 +414,7 @@ _qemu_set()
 				fi
 				[ -n "$drive_driver" ] || drive_driver="virtio-blk-pci"
 				[ -n "$drive_format" ] || drive_format="raw"
-				QEMU_ARGS="$QEMU_ARGS -drive file=$drive_file,format=$drive_format,id=$drive_id -device $drive_driver,drive=$drive_id"
+				QEMU_ARGS="$QEMU_ARGS -drive file=$drive_file,if=none,format=$drive_format,id=$drive_id -device $drive_driver,drive=$drive_id"
 				drive_driver=
 				drive_file=
 				drive_format=
@@ -364,16 +427,20 @@ _qemu_set()
 					return $?
 				fi
 				[ -n "$network_driver" ] || network_driver="virtio-net"
+				if [ -z "$network_interface" ]; then
+					network_interface="$(_qemu_network_interface)"
+					[ $? -eq 0 ] || return 2
+				fi
+				[ -n "$network_mac" ] || network_mac="$(_qemu_network_macaddress "$hostname" "$network_id")"
 				[ -n "$network_type" ] || network_type="tap"
-				QEMU_ARGS="$QEMU_ARGS -netdev $network_type,id=$network_id,ifname=$network_id,script=$network_on_up,downscript=$network_on_down -device $network_driver,netdev=$network_id,mac=$network_mac"
-				$DEBUG echo $IFCONFIG "$network_id" create
-				[ $? -eq 0 ] || return 2
+				QEMU_ARGS="$QEMU_ARGS -netdev $network_type,id=$network_id,ifname=$network_interface,script=$network_on_up,downscript=$network_on_down -device $network_driver,netdev=$network_id,mac=$network_mac"
 				#TODO report errors (here it is too late)
-				[ -n "$network_bridge" ] && $DEBUG "$BRCONFIG" "$network_bridge" add "$network_id"
-				QEMU_NETWORK_INTERFACES="$QEMU_NETWORK_INTERFACES $network_id"
+				[ -n "$network_bridge" ] && $DEBUG "$BRCONFIG" "$network_bridge" add "$network_interface"
+				QEMU_NETWORK_INTERFACES="$QEMU_NETWORK_INTERFACES $network_interface"
 				network_bridge=
 				network_driver=
 				network_id=
+				network_interface=
 				network_mac=
 				network_type=
 				network_on_down=
@@ -381,7 +448,7 @@ _qemu_set()
 				;;
 		esac
 	fi
-	oldcontext="${context%%::*}"
+	oldcontext="${context}"
 }
 
 
