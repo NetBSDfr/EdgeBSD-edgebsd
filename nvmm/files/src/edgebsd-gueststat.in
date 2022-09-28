@@ -28,8 +28,8 @@
 
 #variables
 #essential
-EDGEBSD_VENDOR="EdgeBSD"
-PACKAGE="edgebsd-nvmm"
+VENDOR="@VENDOR@"
+PACKAGE="@PACKAGE@"
 #executables
 CAT="cat"
 CHOWN="chown"
@@ -86,7 +86,7 @@ procfs		/proc	procfs	rw
 tmpfs		/var/shm	tmpfs	rw,-m1777,-sram%25"
 NVMM_HOMEDIR="/home/xen"
 NVMM_BRIDGEIF="bridge0"
-NVMM_SYSCONFDIR="@SYSCONFDIR@/$EDGEBSD_VENDOR/$PACKAGE/hosts"
+NVMM_SYSCONFDIR="@SYSCONFDIR@/$VENDOR/$PACKAGE/hosts"
 PACKAGES="vim"
 PROGNAME="edgebsd-gueststat"
 ROOT_DEVICE=
@@ -105,10 +105,10 @@ XEN_BRIDGEIF="bridge0"
 XEN_SYSCONFDIR="/usr/pkg/etc/xen"
 
 #load local settings
-[ -f "$SYSCONFDIR/$EDGEBSD_VENDOR/$PACKAGE/$PROGNAME.conf" ] &&
-	. "$SYSCONFDIR/$EDGEBSD_VENDOR/$PACKAGE/$PROGNAME.conf"
-[ -f "$HOME/.config/$EDGEBSD_VENDOR/$PACKAGE/$PROGNAME.conf" ] &&
-	. "$HOME/.config/$EDGEBSD_VENDOR/$PACKAGE/$PROGNAME.conf"
+[ -f "$SYSCONFDIR/$VENDOR/$PACKAGE/$PROGNAME.conf" ] &&
+	. "$SYSCONFDIR/$VENDOR/$PACKAGE/$PROGNAME.conf"
+[ -f "$HOME/.config/$VENDOR/$PACKAGE/$PROGNAME.conf" ] &&
+	. "$HOME/.config/$VENDOR/$PACKAGE/$PROGNAME.conf"
 
 
 #functions

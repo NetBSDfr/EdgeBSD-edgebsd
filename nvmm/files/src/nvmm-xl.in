@@ -28,12 +28,12 @@
 
 #variables
 #essential
-EDGEBSD_VENDOR="EdgeBSD"
-PACKAGE="edgebsd-nvmm"
+VENDOR="@VENDOR@"
+PACKAGE="@PACKAGE@"
 #executables
 CAT="cat"
 DEBUG="_debug"
-EDGEBSD_QEMU="@PREFIX@/libexec/$EDGEBSD_VENDOR/$PACKAGE/edgebsd-qemu"
+EDGEBSD_QEMU="@PREFIX@/libexec/$VENDOR/$PACKAGE/edgebsd-qemu"
 MKDIR="mkdir"
 NC="nc"
 NVMMCTL="/usr/sbin/nvmmctl"
@@ -53,10 +53,10 @@ USER="$(id -un)"
 VERBOSE=1
 
 #load local settings
-[ -f "$SYSCONFDIR/$EDGEBSD_VENDOR/$PACKAGE/$PROGNAME.conf" ] &&
-	. "$SYSCONFDIR/$EDGEBSD_VENDOR/$PACKAGE/$PROGNAME.conf"
-[ -n "$HOME" -a -f "$HOME/.config/$EDGEBSD_VENDOR/$PACKAGE/$PROGNAME.conf" ] &&
-	. "$HOME/.config/$EDGEBSD_VENDOR/$PACKAGE/$PROGNAME.conf"
+[ -f "$SYSCONFDIR/$VENDOR/$PACKAGE/$PROGNAME.conf" ] &&
+	. "$SYSCONFDIR/$VENDOR/$PACKAGE/$PROGNAME.conf"
+[ -n "$HOME" -a -f "$HOME/.config/$VENDOR/$PACKAGE/$PROGNAME.conf" ] &&
+	. "$HOME/.config/$VENDOR/$PACKAGE/$PROGNAME.conf"
 
 
 #functions

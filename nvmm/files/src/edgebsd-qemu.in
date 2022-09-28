@@ -28,8 +28,8 @@
 
 #variables
 #essential
-EDGEBSD_VENDOR="EdgeBSD"
-PACKAGE="edgebsd-nvmm"
+VENDOR="@VENDOR@"
+PACKAGE="@PACKAGE@"
 #executables
 BRCONFIG="/sbin/brconfig"
 DEBUG="_debug"
@@ -72,10 +72,10 @@ SYSCONFDIR="@SYSCONFDIR@"
 VERBOSE=1
 
 #load local settings
-[ -f "$SYSCONFDIR/$EDGEBSD_VENDOR/$PACKAGE/$PROGNAME.conf" ] &&
-	. "$SYSCONFDIR/$EDGEBSD_VENDOR/$PACKAGE/$PROGNAME.conf"
-[ -n "$HOME" -a -f "$HOME/.config/$EDGEBSD_VENDOR/$PACKAGE/$PROGNAME.conf" ] &&
-	. "$HOME/.config/$EDGEBSD_VENDOR/$PACKAGE/$PROGNAME.conf"
+[ -f "$SYSCONFDIR/$VENDOR/$PACKAGE/$PROGNAME.conf" ] &&
+	. "$SYSCONFDIR/$VENDOR/$PACKAGE/$PROGNAME.conf"
+[ -n "$HOME" -a -f "$HOME/.config/$VENDOR/$PACKAGE/$PROGNAME.conf" ] &&
+	. "$HOME/.config/$VENDOR/$PACKAGE/$PROGNAME.conf"
 
 
 #functions
@@ -117,7 +117,7 @@ _edgebsd_qemu()
 	shift $((OPTIND - 1))
 	if [ $# -eq 1 ]; then
 		hostname="$1"
-		config="$SYSCONFDIR/$EDGEBSD_VENDOR/$PACKAGE/hosts/$hostname.conf"
+		config="$SYSCONFDIR/$VENDOR/$PACKAGE/hosts/$hostname.conf"
 	elif [ $# -eq 2 ]; then
 		hostname="$1"
 		config="$2"
