@@ -89,7 +89,7 @@ _nvmm_xl()
 	shift
 
 	case "$command" in
-		cd_eject|console|create|destroy|list|monitor|shutdown)
+		cd_eject|console|create|destroy|list|monitor|reboot|shutdown)
 			"_nvmm_xl_$command" "$@"
 			return $?
 			;;
@@ -336,6 +336,37 @@ _nvmm_xl_monitor()
 }
 
 
+#nvmm_xl_reboot
+_nvmm_xl_reboot()
+{
+	while getopts "O:qv" name; do
+		case "$name" in
+			O)
+				eval "${OPTARG%%=*}"="${OPTARG#*=}"
+				;;
+			q)
+				VERBOSE=0
+				;;
+			v)
+				VERBOSE=$((VERBOSE + 1))
+				;;
+			*)
+				_usage
+				return $?
+				;;
+		esac
+	done
+	shift $((OPTIND - 1))
+	if [ $# -ne 1 ]; then
+		_usage "reboot: A domain is required"
+		return $?
+	fi
+	domain="$1"
+
+	_nvmm_xl_command "$domain" "system_reset"
+}
+
+
 #nvmm_xl_shutdown
 _nvmm_xl_shutdown()
 {
@@ -385,6 +416,7 @@ _usage()
 	echo "  destroy	Power off a Virtual Machine instance" 1>&2
 	echo "  list		List the Virtual Machine instances available" 1>&2
 	echo "  monitor		Attach the monitor of a Virtual Machine instance" 1>&2
+	echo "  reboot	Reboot a Virtual Machine instance" 1>&2
 	echo "  shutdown [-F]	Stop a Virtual Machine instance gracefully" 1>&2
 	return 1
 }
