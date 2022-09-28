@@ -453,7 +453,7 @@ _qemu_set()
 				[ -n "$network_type" ] || network_type="tap"
 				QEMU_ARGS="$QEMU_ARGS -netdev $network_type,id=$network_id,ifname=$network_interface,script=$network_on_up,downscript=$network_on_down -device $network_driver,netdev=$network_id,mac=$network_mac"
 				#TODO report errors (here it is too late)
-				[ -n "$network_bridge" ] && $DEBUG "$BRCONFIG" "$network_bridge" add "$network_interface"
+				[ -n "$network_bridge" ] && $DEBUG $BRCONFIG "$network_bridge" add "$network_interface"
 				QEMU_NETWORK_INTERFACES="$QEMU_NETWORK_INTERFACES $network_interface"
 				network_bridge=
 				network_driver=
