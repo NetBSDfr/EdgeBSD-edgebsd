@@ -56,6 +56,9 @@ PROGNAME="edgebsd-qemu"
 QEMU_ARGS=
 QEMU_CHROOT=
 QEMU_DEFAULT_ARGS=
+QEMU_EVENT_PANIC=
+QEMU_EVENT_REBOOT=
+QEMU_EVENT_SHUTDOWN=
 QEMU_MACHINE="accel=nvmm"
 QEMU_MEMORY=
 QEMU_NAME=
@@ -271,6 +274,12 @@ _qemu_run()
 	[ -n "$QEMU_CHROOT" ] && QEMU="$QEMU -chroot $QEMU_CHROOT"
 	[ $QEMU_CPUS -gt 1 ] && QEMU="$QEMU -smp $QEMU_CPUS"
 	[ -n "$QEMU_MEMORY" ] && QEMU="$QEMU -m $QEMU_MEMORY"
+	[ -n "$QEMU_EVENT_PANIC" -a "$QEMU_EVENT_PANIC" != "poweroff" ] &&
+		QEMU="$QEMU -action panic=$QEMU_EVENT_PANIC"
+	[ -n "$QEMU_EVENT_REBOOT" -a "$QEMU_EVENT_REBOOT" != "reboot" ] &&
+		QEMU="$QEMU -action reboot=$QEMU_EVENT_REBOOT"
+	[ -n "$QEMU_EVENT_SHUTDOWN" -a "$QEMU_EVENT_SHUTDOWN" != "poweroff" ] &&
+		QEMU="$QEMU -action shutdown=$QEMU_EVENT_SHUTDOWN"
 
 	#lock if necessary
 	if [ -n "$QEMU_SOCKET" ]; then
@@ -318,6 +327,15 @@ _qemu_set()
 				;;
 			name)
 				QEMU_NAME="$value"
+				;;
+			on_panic)
+				QEMU_EVENT_PANIC="$value"
+				;;
+			on_reboot)
+				QEMU_EVENT_REBOOT="$value"
+				;;
+			on_shutdown)
+				QEMU_EVENT_SHUTDOWN="$value"
 				;;
 			user)
 				[ -z "$QEMU_USER" ] && QEMU_USER="$value"
