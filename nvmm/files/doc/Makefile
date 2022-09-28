@@ -30,11 +30,14 @@ install: all
 	./docbook.sh -P "$(DESTDIR)$(PREFIX)" -i -- "$(OBJDIR)nvmm-xl.8"
 	./docbook.sh -P "$(DESTDIR)$(PREFIX)" -i -- "$(OBJDIR)nvmm-xl.html"
 	$(MKDIR) $(DESTDIR)$(PREFIX)/share/doc/edgebsd-nvmm
+	$(INSTALL) -m 0644 host.conf $(DESTDIR)$(PREFIX)/share/doc/edgebsd-nvmm/host.conf
+	$(MKDIR) $(DESTDIR)$(PREFIX)/share/doc/edgebsd-nvmm
 	$(INSTALL) -m 0644 template.netbsd.amd64 $(DESTDIR)$(PREFIX)/share/doc/edgebsd-nvmm/template.netbsd.amd64
 
 uninstall:
 	./docbook.sh -P "$(DESTDIR)$(PREFIX)" -u -- "nvmm-xl.8"
 	./docbook.sh -P "$(DESTDIR)$(PREFIX)" -u -- "nvmm-xl.html"
+	$(RM) -- $(DESTDIR)$(PREFIX)/share/doc/edgebsd-nvmm/host.conf
 	$(RM) -- $(DESTDIR)$(PREFIX)/share/doc/edgebsd-nvmm/template.netbsd.amd64
 
 .PHONY: all clean distclean install uninstall

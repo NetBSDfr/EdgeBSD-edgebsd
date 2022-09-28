@@ -41,6 +41,7 @@ dist:
 	@cd $(OBJDIR). && $(TAR) -czvf $(PACKAGE)-$(VERSION)$(TGZEXT) -- \
 		$(PACKAGE)-$(VERSION)/doc/Makefile \
 		$(PACKAGE)-$(VERSION)/doc/docbook.sh \
+		$(PACKAGE)-$(VERSION)/doc/host.conf \
 		$(PACKAGE)-$(VERSION)/doc/nvmm-xl.css.xml \
 		$(PACKAGE)-$(VERSION)/doc/nvmm-xl.xml \
 		$(PACKAGE)-$(VERSION)/doc/manual.css.xml \
