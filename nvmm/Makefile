@@ -2,7 +2,7 @@
 
 PKGNAME=	edgebsd-nvmm-${VERSION}
 VERSION=	9
-PKGREVISION=	14
+PKGREVISION=	15
 CATEGORIES=	edgebsd
 
 MAINTAINER=	khorben@edgebsd.org
@@ -41,6 +41,8 @@ do-extract:
 	${CP} -R -- ${FILESDIR} ${WRKSRC}
 
 post-install:
+	${MV} ${DESTDIR}${PREFIX}/share/doc/edgebsd-nvmm/host.conf \
+		${DESTDIR}${PREFIX}/${EGDIR}
 	${MV} ${DESTDIR}${PREFIX}/share/doc/edgebsd-nvmm/template.netbsd.amd64 \
 		${DESTDIR}${PREFIX}/${EGDIR}
 
