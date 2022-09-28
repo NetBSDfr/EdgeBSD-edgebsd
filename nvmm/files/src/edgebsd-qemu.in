@@ -41,7 +41,7 @@ case "$(uname -s)" in
 esac
 IFCONFIG="/sbin/ifconfig"
 MAKEDEV="/dev/MAKEDEV"
-MKDIR="mkdir -p"
+MKDIR="mkdir"
 QEMU=
 RM="rm -f"
 RMDIR="rmdir"
