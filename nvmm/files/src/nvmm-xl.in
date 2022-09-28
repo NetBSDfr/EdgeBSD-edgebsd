@@ -38,6 +38,7 @@ MKDIR="mkdir"
 NC="nc"
 NVMMCTL="/usr/sbin/nvmmctl"
 SCREEN="@BINDIR@/screen"
+TR="tr"
 #settings
 CHROOTDIR=
 DEVNULL="/dev/null"
@@ -84,9 +85,11 @@ _nvmm_xl()
 		return $?
 	fi
 	command="$1"
+	command=$(echo "$command" | $TR -- - _)
 	shift
+
 	case "$command" in
-		console|create|destroy|list|monitor|shutdown)
+		cd_eject|console|create|destroy|list|monitor|shutdown)
 			"_nvmm_xl_$command" "$@"
 			return $?
 			;;
@@ -98,9 +101,65 @@ _nvmm_xl()
 }
 
 
+#nvmm_xl_cd_eject
+_nvmm_xl_cd_eject()
+{
+	command_args=
+
+	while getopts "fO:qv" name; do
+		case "$name" in
+			f)
+				command_args="$command_args -f"
+				;;
+			O)
+				eval "${OPTARG%%=*}"="${OPTARG#*=}"
+				;;
+			q)
+				VERBOSE=0
+				;;
+			v)
+				VERBOSE=$((VERBOSE + 1))
+				;;
+			*)
+				_usage
+				return $?
+				;;
+		esac
+	done
+	shift $((OPTIND - 1))
+	if [ $# -ne 2 ]; then
+		_usage "cd-eject: A domain and a device are required"
+		return $?
+	fi
+	domain="$1"
+	device="$2"
+
+	 _nvmm_xl_command "$domain" "eject$command_args $device"
+}
+
+
 #nvmm_xl_command
 _nvmm_xl_command()
 {
+	if [ $# -lt 2 ]; then
+		_usage "command: A domain and a command are required"
+		return $?
+	fi
+	domain="$1"
+	socket="$RUNDIR/$domain/socket"
+	shift
+
+	echo "$@" | $DEBUG $NC -N -U "$socket" > "$DEVNULL"
+}
+
+
+#nvmm_xl_command_sync
+_nvmm_xl_command_sync()
+{
+	if [ $# -lt 2 ]; then
+		_usage "command: A domain and a command are required"
+		return $?
+	fi
 	domain="$1"
 	socket="$RUNDIR/$domain/socket"
 	shift
@@ -228,7 +287,7 @@ _nvmm_xl_destroy()
 	fi
 	domain="$1"
 
-	_nvmm_xl_command "$domain" "quit"
+	_nvmm_xl_command_sync "$domain" "quit"
 }
 
 
@@ -277,37 +336,6 @@ _nvmm_xl_monitor()
 }
 
 
-#nvmm_xl_reboot
-_nvmm_xl_reboot()
-{
-	while getopts "O:qv" name; do
-		case "$name" in
-			O)
-				eval "${OPTARG%%=*}"="${OPTARG#*=}"
-				;;
-			q)
-				VERBOSE=0
-				;;
-			v)
-				VERBOSE=$((VERBOSE + 1))
-				;;
-			*)
-				_usage
-				return $?
-				;;
-		esac
-	done
-	shift $((OPTIND - 1))
-	if [ $# -ne 1 ]; then
-		_usage "reboot: A domain is required"
-		return $?
-	fi
-	domain="$1"
-
-	_nvmm_xl_command "$domain" "system_reset"
-}
-
-
 #nvmm_xl_shutdown
 _nvmm_xl_shutdown()
 {
@@ -340,7 +368,7 @@ _nvmm_xl_shutdown()
 	fi
 	domain="$1"
 
-	_nvmm_xl_command "$domain" "system_powerdown"
+	_nvmm_xl_command_sync "$domain" "system_powerdown"
 }
 
 
@@ -351,6 +379,7 @@ _usage()
 	echo "Usage: $PROGNAME command [options...]" 1>&2
 	echo 1>&2
 	echo "Commands supported:" 1>&2
+	echo "  cd-eject	Eject a CD from a removable device" 1>&2
 	echo "  console	Attach the console of a Virtual Machine instance" 1>&2
 	echo "  create [-c]	Start a Virtual Machine instance" 1>&2
 	echo "  destroy	Power off a Virtual Machine instance" 1>&2
