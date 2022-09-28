@@ -83,7 +83,7 @@ _nvmm_xl()
 	command="$1"
 	shift
 	case "$command" in
-		console|create|destroy|list|shutdown)
+		console|create|destroy|list|monitor|shutdown)
 			"_nvmm_xl_$command" "$@"
 			return $?
 			;;
@@ -224,6 +224,20 @@ _nvmm_xl_list()
 }
 
 
+#nvmm_xl_monitor
+_nvmm_xl_monitor()
+{
+	if [ $# -ne 1 ]; then
+		_usage "monitor: A domain is required"
+		return $?
+	fi
+	domain="$1"
+	socket="$RUNDIR/$domain/socket"
+
+	$DEBUG $NC -U "$socket"
+}
+
+
 #nvmm_xl_shutdown
 _nvmm_xl_shutdown()
 {
@@ -265,6 +279,7 @@ _usage()
 	echo "  create [-c]	Start a Virtual Machine instance" 1>&2
 	echo "  destroy	Power off a Virtual Machine instance" 1>&2
 	echo "  list		List the Virtual Machine instances available" 1>&2
+	echo "  monitor		Attach the monitor of a Virtual Machine instance" 1>&2
 	echo "  shutdown [-F]	Stop a Virtual Machine instance gracefully" 1>&2
 	return 1
 }
