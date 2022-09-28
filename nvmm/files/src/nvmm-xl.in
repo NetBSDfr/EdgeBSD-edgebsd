@@ -32,7 +32,7 @@ EDGEBSD_VENDOR="EdgeBSD"
 PACKAGE="edgebsd-nvmm"
 #executables
 CAT="cat"
-DEBUG=
+DEBUG="_debug"
 EDGEBSD_QEMU="@PREFIX@/libexec/$EDGEBSD_VENDOR/$PACKAGE/edgebsd-qemu"
 MKDIR="mkdir"
 NC="nc"
@@ -41,12 +41,14 @@ SCREEN="@BINDIR@/screen"
 #settings
 CHROOTDIR=
 DEVNULL="/dev/null"
+DRYRUN=0
 PREFIX="@PREFIX@"
 PROGNAME="nvmm-xl"
 RUNAS=
 SCREENDIR="/tmp/screens"
 SYSCONFDIR="@SYSCONFDIR@"
 USER="$(id -un)"
+VERBOSE=1
 
 #load local settings
 [ -f "$SYSCONFDIR/$EDGEBSD_VENDOR/$PACKAGE/$PROGNAME.conf" ] &&
@@ -59,8 +61,8 @@ USER="$(id -un)"
 #debug
 _debug()
 {
-	echo "$@" 1>&2
-	"$@"
+	[ $VERBOSE -ge 3 ] && echo "$@" 1>&2
+	[ $DRYRUN -ne 0 ] || "$@"
 }
 
 
@@ -109,10 +111,16 @@ _nvmm_xl_command()
 #nvmm_xl_console
 _nvmm_xl_console()
 {
-	while getopts "O:" name; do
+	while getopts "O:qv" name; do
 		case "$name" in
 			O)
 				eval "${OPTARG%%=*}"="${OPTARG#*=}"
+				;;
+			q)
+				VERBOSE=0
+				;;
+			v)
+				VERBOSE=$((VERBOSE + 1))
 				;;
 			*)
 				_usage
@@ -144,13 +152,19 @@ _nvmm_xl_console()
 _nvmm_xl_create()
 {
 	console=0
-	while getopts "cO:" name; do
+	while getopts "cO:qv" name; do
 		case "$name" in
 			c)
 				console=1
 				;;
 			O)
 				eval "${OPTARG%%=*}"="${OPTARG#*=}"
+				;;
+			q)
+				VERBOSE=0
+				;;
+			v)
+				VERBOSE=$((VERBOSE + 1))
 				;;
 			*)
 				_usage
@@ -189,10 +203,16 @@ _nvmm_xl_create()
 #nvmm_xl_destroy
 _nvmm_xl_destroy()
 {
-	while getopts "O:" name; do
+	while getopts "O:qv" name; do
 		case "$name" in
 			O)
 				eval "${OPTARG%%=*}"="${OPTARG#*=}"
+				;;
+			q)
+				VERBOSE=0
+				;;
+			v)
+				VERBOSE=$((VERBOSE + 1))
 				;;
 			*)
 				_usage
@@ -227,6 +247,24 @@ _nvmm_xl_list()
 #nvmm_xl_monitor
 _nvmm_xl_monitor()
 {
+	while getopts "O:qv" name; do
+		case "$name" in
+			O)
+				eval "${OPTARG%%=*}"="${OPTARG#*=}"
+				;;
+			q)
+				VERBOSE=0
+				;;
+			v)
+				VERBOSE=$((VERBOSE + 1))
+				;;
+			*)
+				_usage
+				return $?
+				;;
+		esac
+	done
+	shift $((OPTIND - 1))
 	if [ $# -ne 1 ]; then
 		_usage "monitor: A domain is required"
 		return $?
@@ -238,11 +276,42 @@ _nvmm_xl_monitor()
 }
 
 
+#nvmm_xl_reboot
+_nvmm_xl_reboot()
+{
+	while getopts "O:qv" name; do
+		case "$name" in
+			O)
+				eval "${OPTARG%%=*}"="${OPTARG#*=}"
+				;;
+			q)
+				VERBOSE=0
+				;;
+			v)
+				VERBOSE=$((VERBOSE + 1))
+				;;
+			*)
+				_usage
+				return $?
+				;;
+		esac
+	done
+	shift $((OPTIND - 1))
+	if [ $# -ne 1 ]; then
+		_usage "reboot: A domain is required"
+		return $?
+	fi
+	domain="$1"
+
+	_nvmm_xl_command "$domain" "system_reset"
+}
+
+
 #nvmm_xl_shutdown
 _nvmm_xl_shutdown()
 {
 	fallback=0
-	while getopts "FO:" name; do
+	while getopts "FO:qv" name; do
 		case "$name" in
 			F)
 				#XXX implement
@@ -250,6 +319,12 @@ _nvmm_xl_shutdown()
 				;;
 			O)
 				eval "${OPTARG%%=*}"="${OPTARG#*=}"
+				;;
+			q)
+				VERBOSE=0
+				;;
+			v)
+				VERBOSE=$((VERBOSE + 1))
 				;;
 			*)
 				_usage
