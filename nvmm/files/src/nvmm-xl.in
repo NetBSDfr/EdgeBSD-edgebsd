@@ -99,7 +99,7 @@ _nvmm_xl()
 _nvmm_xl_command()
 {
 	domain="$1"
-	socket="$RUNDIR/$domain"
+	socket="$RUNDIR/$domain/socket"
 	shift
 
 	echo "$@" | $DEBUG $NC -U "$socket" > "$DEVNULL"
