@@ -157,7 +157,7 @@ _qemu_network_interface()
 				return $?
 			fi
 		fi
-		$DEBUG $IFCONFIG "$interface" create 2> "$DEVNULL"
+		$DEBUG $IFCONFIG "$interface" create up 2> "$DEVNULL"
 		if [ $? -eq 0 ]; then
 			$ECHO -n "$interface"
 			return 0
