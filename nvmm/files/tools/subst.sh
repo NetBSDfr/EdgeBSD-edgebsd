@@ -1,6 +1,6 @@
 #!/bin/sh
 #$Id$
-#Copyright (c) 2012-2020 Pierre Pronchery <khorben@defora.org>
+#Copyright (c) 2012-2022 Pierre Pronchery <khorben@defora.org>
 #
 #Redistribution and use in source and binary forms, with or without
 #modification, are permitted provided that the following conditions are met:
@@ -115,7 +115,8 @@ _subst()
 		source="${source}.in"
 		([ -z "$OBJDIR" ] || $DEBUG $MKDIR -- "${target%/*}") \
 								|| return 2
-		$DEBUG $SED -e "s;@PACKAGE@;$PACKAGE;g" \
+		$DEBUG $SED -e "s;@VENDOR@;$VENDOR;g" \
+			-e "s;@PACKAGE@;$PACKAGE;g" \
 			-e "s;@VERSION@;$VERSION;g" \
 			-e "s;@PREFIX@;$PREFIX;g" \
 			-e "s;@BINDIR@;$BINDIR;g" \
