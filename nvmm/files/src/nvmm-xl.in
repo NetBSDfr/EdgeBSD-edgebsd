@@ -173,19 +173,16 @@ _nvmm_xl_create()
 	domain="${filename##*/}"
 	section=
 	#variables
-	qemu_args=
-	[ -n "$CHROOTDIR" ] && qemu_args="$qemu_args -chroot $CHROOTDIR"
-	[ -n "$RUNAS" ] && qemu_args="$qemu_args -runas $RUNAS"
-	qemu_machine="accel=nvmm"
-	qemu_memory="128M"
-	qemu_vcpus="1"
+	edgebsd_qemu_args=
+	[ -n "$CHROOTDIR" ] && edgebsd_qemu_args="$edgebsd_qemu_args -c $CHROOTDIR"
+	[ -n "$RUNAS" ] && edgebsd_qemu_args="$edgebsd_qemu_args -u $RUNAS"
 
 	session="_nvmm-$domain"
 	screen_args=
 	[ $console -eq 0 ] && screen_args="-d -m"
 
 	$DEBUG $SCREEN -S "$session" $screen_args \
-		$EDGEBSD_QEMU "$domain" "$filename"
+		$EDGEBSD_QEMU $edgebsd_qemu_args "$domain" "$filename"
 }
 
 

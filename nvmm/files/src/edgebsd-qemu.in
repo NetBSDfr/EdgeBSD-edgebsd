@@ -85,10 +85,13 @@ _edgebsd_qemu()
 	hostname=
 	config=
 
-	while getopts "a:O:nqu:v" name; do
+	while getopts "a:c:O:nqu:v" name; do
 		case "$name" in
 			a)
 				QEMU_ARCH="$OPTARG"
+				;;
+			c)
+				QEMU_CHROOT="$OPTARG"
 				;;
 			n)
 				DRYRUN=1
