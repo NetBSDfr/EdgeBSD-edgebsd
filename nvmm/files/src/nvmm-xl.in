@@ -45,6 +45,7 @@ DRYRUN=0
 PREFIX="@PREFIX@"
 PROGNAME="nvmm-xl"
 RUNAS=
+RUNDIR="/var/run/nvmm"
 SCREENDIR="/tmp/screens"
 SYSCONFDIR="@SYSCONFDIR@"
 USER="$(id -un)"
