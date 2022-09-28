@@ -1,0 +1,488 @@
+#!/bin/sh
+#Copyright (c) 2022 Pierre Pronchery <khorben@EdgeBSD.org>
+#This file is part of EdgeBSD NVMM
+#This code is derived from software contributed to the EdgeBSD Project
+#by Pierre Pronchery <khorben@EdgeBSD.org>
+#
+#Redistribution and use in source and binary forms, with or without
+#modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+#THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+#AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+#IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+#DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+#FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+#DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+#SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+#CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+#OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+#OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+
+
+#variables
+#essential
+EDGEBSD_VENDOR="EdgeBSD"
+PACKAGE="edgebsd-nvmm"
+#executables
+BRCONFIG="/sbin/brconfig"
+DEBUG="_debug"
+ECHO="echo"
+case "$(uname -s)" in
+	Darwin)
+		ECHO="/bin/echo"
+		;;
+esac
+IFCONFIG="/sbin/ifconfig"
+MAKEDEV="/dev/MAKEDEV"
+MKDIR="mkdir -p"
+QEMU=
+RM="rm -f"
+RMDIR="rmdir"
+SEQ="seq"
+SHA1="sha1"
+UNAME="uname"
+#settings
+BINDIR="@BINDIR@"
+DEVNULL="/dev/null"
+DRYRUN=0
+PROGNAME="edgebsd-qemu"
+QEMU_ARGS=
+QEMU_CHROOT=
+QEMU_DEFAULT_ARGS=
+QEMU_MACHINE="accel=nvmm"
+QEMU_MEMORY=
+QEMU_NAME=
+QEMU_NETWORK_INTERFACES=
+QEMU_NETWORK_MAX=255
+QEMU_SOCKET=
+QEMU_USER=
+QEMU_VCPUS=1
+RUNDIR="/var/run/nvmm"
+SYSCONFDIR="@SYSCONFDIR@"
+VERBOSE=1
+
+#load local settings
+[ -f "$SYSCONFDIR/$EDGEBSD_VENDOR/$PACKAGE/$PROGNAME.conf" ] &&
+	. "$SYSCONFDIR/$EDGEBSD_VENDOR/$PACKAGE/$PROGNAME.conf"
+[ -n "$HOME" -a -f "$HOME/.config/$EDGEBSD_VENDOR/$PACKAGE/$PROGNAME.conf" ] &&
+	. "$HOME/.config/$EDGEBSD_VENDOR/$PACKAGE/$PROGNAME.conf"
+
+
+#functions
+#edgebsd_qemu
+_edgebsd_qemu()
+{
+	hostname=
+	config=
+
+	while getopts "a:O:nqu:v" name; do
+		case "$name" in
+			a)
+				QEMU_ARCH="$OPTARG"
+				;;
+			n)
+				DRYRUN=1
+				;;
+			O)
+				eval "${OPTARG%%=*}"="${OPTARG#*=}"
+				;;
+			q)
+				VERBOSE=0
+				;;
+			u)
+				QEMU_USER="$OPTARG"
+				;;
+			v)
+				VERBOSE=$((VERBOSE + 1))
+				;;
+			*)
+				_usage
+				return $?
+				;;
+		esac
+	done
+	shift $((OPTIND - 1))
+	if [ $# -eq 1 ]; then
+		hostname="$1"
+		config="$SYSCONFDIR/$EDGEBSD_VENDOR/$PACKAGE/hosts/$hostname.conf"
+	elif [ $# -eq 2 ]; then
+		hostname="$1"
+		config="$2"
+	fi
+	if [ -z "$hostname" ]; then
+		_usage "hostname not set"
+		return $?
+	fi
+	if [ -z "$config" ]; then
+		_usage "configuration file not set"
+		return $?
+	fi
+	_qemu_parse "$hostname" "$config" &&
+		_qemu_run
+}
+
+_qemu_cleanup()
+{
+	#cleanup: network interfaces
+	[ -n "$QEMU_NETWORK_INTERFACES" ] && for interface in $QEMU_NETWORK_INTERFACES; do
+		$DEBUG $IFCONFIG "$interface" destroy
+	done
+
+	#cleanup: UNIX socket
+	if [ -n "$QEMU_SOCKET" ]; then
+		$DEBUG $RM -- "$QEMU_SOCKET"
+	fi
+
+	#cleanup: host directory
+	$DEBUG $RMDIR -- "${QEMU_SOCKET%/*}"
+}
+
+_qemu_network_interface()
+{
+	for i in $($SEQ 0 $QEMU_NETWORK_MAX); do
+		interface="tap$i"
+		device="/dev/$interface"
+
+		if [ ! -c "$device" ]; then
+			(cd "${device%/*}" && $DEBUG $MAKEDEV "${device##*/}") 2> "$DEVNULL"
+			if [ $? -ne 0 ]; then
+				_error "$device: Could not create device node"
+				return $?
+			fi
+		fi
+		$DEBUG $IFCONFIG "$interface" create 2> "$DEVNULL"
+		if [ $? -eq 0 ]; then
+			$ECHO -n "$interface"
+			return 0
+		fi
+	done
+	_error "Could not create network interface"
+	return $?
+}
+
+_qemu_network_macaddress()
+{
+	hostname="$1"
+	interface="$2"
+
+	hash="$($ECHO -n "$hostname.$interface" | $SHA1)"
+	hash1="${hash#??}" 1>&2
+	hash0="${hash%$hash1}"
+	hash2="${hash1#??}" 1>&2
+	hash1="${hash1%$hash2}"
+	hash3="${hash2#??}" 1>&2
+	hash2="${hash2%$hash3}"
+	$ECHO -n "00:0e:22:$hash0:$hash1:$hash2"
+}
+
+_qemu_parse()
+{
+	hostname="$1"
+	config="$2"
+	context=
+
+	#set default values
+	if [ -z "$QEMU_DEFAULT_ARGS" ]; then
+		[ -n "$QEMU_SOCKET" ] || QEMU_SOCKET="$RUNDIR/$hostname/socket"
+		QEMU_DEFAULT_ARGS="-nodefaults -nographic\
+ -chardev stdio,id=s1,signal=off\
+ -serial none -device isa-serial,chardev=s1\
+ -chardev socket,id=mon0,path=$QEMU_SOCKET,server=on,wait=off\
+ -mon chardev=mon0,mode=readline\
+ -object rng-random,filename=/dev/urandom,id=viornd0\
+ -device virtio-rng-pci,rng=viornd0"
+	fi
+	[ -z "$QEMU_NAME" ] && QEMU_NAME="$hostname"
+
+	drive_driver=
+	drive_file=
+	drive_format=
+	drive_id=
+
+	network_bridge=
+	network_driver=
+	network_id=
+	network_interface=
+	network_mac=
+	network_on_down="no"
+	network_on_up="no"
+	network_type=
+
+	#parse the configuration file
+	cnt=0
+	while read line; do
+		cnt=$((cnt + 1))
+		case "$line" in
+			"#"*)
+				#ignore comments
+				;;
+			"["*"]")
+				#change of section
+				context="${line%]*}"
+				context="${context#[}"
+
+				#signal the new context
+				_qemu_set "$context" "" ""
+				[ $? -eq 0 ] || return 2
+				;;
+			*=*)
+				#variable definition
+				name="${line%%=*}"
+				value="${line#*=}"
+				_qemu_set "$context" "$name" "$value"
+				[ $? -eq 0 ] || return 2
+				;;
+			*)
+				[ -z "$line" ] && continue
+				_error "$config: parse error at line $cnt"
+				return $?
+				;;
+		esac
+	done < "$config"
+
+	#wrap ongoing parsing
+	_qemu_set "" "" ""
+}
+
+_qemu_run()
+{
+	#determine the path to QEMU
+	if [ -z "$QEMU" ]; then
+		[ -z "$QEMU_ARCH" ] && QEMU_ARCH="$($UNAME -m)"
+		case "$QEMU_ARCH" in
+			amd64)
+				QEMU_ARCH="x86_64"
+				;;
+		esac
+		QEMU="$BINDIR/qemu-system-$QEMU_ARCH"
+	fi
+
+	#determine QEMU parameters
+	[ -n "$QEMU_NAME" ] && QEMU="$QEMU -name $QEMU_NAME"
+	[ -n "$QEMU_MACHINE" ] && QEMU="$QEMU -machine $QEMU_MACHINE"
+	[ -n "$QEMU_USER" ] && QEMU="$QEMU -runas $QEMU_USER"
+	[ -n "$QEMU_CHROOT" ] && QEMU="$QEMU -chroot $QEMU_CHROOT"
+	[ $QEMU_CPUS -gt 1 ] && QEMU="$QEMU -smp $QEMU_CPUS"
+	[ -n "$QEMU_MEMORY" ] && QEMU="$QEMU -m $QEMU_MEMORY"
+
+	#lock if necessary
+	if [ -n "$QEMU_SOCKET" ]; then
+		$DEBUG $MKDIR -m 0700 "${QEMU_SOCKET%/*}"
+		if [ $? -ne 0 ]; then
+			_error "$QEMU_SOCKET: Could not create the socket"
+			return $?
+		fi
+	fi
+
+	#run QEMU
+	$DEBUG $QEMU $QEMU_DEFAULT_ARGS $QEMU_ARGS
+	ret=$?
+
+	_qemu_cleanup
+
+	return $ret
+}
+
+_qemu_set()
+{
+	context="$1"
+	name="$2"
+	value="$3"
+
+	if [ -z "$context" ]; then
+		case "$name" in
+			arch)
+				[ -z "$QEMU_ARCH" ] && QEMU_ARCH="$value"
+				;;
+			args)
+				QEMU_ARGS="$QEMU_ARGS $value"
+				;;
+			chroot)
+				[ -z "$QEMU_CHROOT" ] && QEMU_CHROOT="$value"
+				;;
+			cpus)
+				QEMU_CPUS="$value"
+				;;
+			machine)
+				QEMU_MACHINE="$value"
+				;;
+			memory)
+				QEMU_MEMORY="$value"
+				;;
+			name)
+				QEMU_NAME="$value"
+				;;
+			user)
+				[ -z "$QEMU_USER" ] && QEMU_USER="$value"
+				;;
+			"")
+				#XXX ignore
+				;;
+			*)
+				_error "$name: unsupported global parameter"
+				return $?
+				;;
+		esac
+	elif [ "${context%%::*}" = "drive" ]; then
+		drive_id="${context#*::}"
+		if [ -z "$drive_id" ]; then
+			_error "ID not set for drive"
+			return $?
+		fi
+		case "$name" in
+			driver)
+				drive_driver="$value"
+				;;
+			file)
+				drive_file="$value"
+				;;
+			format)
+				drive_format="$value"
+				;;
+			id)
+				drive_id="$value"
+				;;
+			"")
+				#XXX ignore
+				;;
+			*)
+				_error "$name: unsupported parameter in [drive::$drive_id]"
+				return $?
+				;;
+		esac
+	elif [ "${context%%::*}" = "network" ]; then
+		network_id="${context#*::}"
+		if [ -z "$network_id" ]; then
+			_error "ID not set for network"
+			return $?
+		fi
+		case "$name" in
+			bridge)
+				network_bridge="$value"
+				;;
+			driver)
+				network_driver="$value"
+				;;
+			id)
+				network_id="$value"
+				;;
+			interface)
+				network_interface="$value"
+				;;
+			mac)
+				network_mac="$value"
+				;;
+			on_down)
+				network_on_down="$value"
+				;;
+			on_up)
+				network_on_up="$value"
+				;;
+			type)
+				network_type="$value"
+				;;
+			"")
+				#XXX ignore
+				;;
+			*)
+				_error "$name: unsupported parameter in [network::$network_id]"
+				return $?
+				;;
+		esac
+	else
+		_error "$context: unsupported section"
+		return $?
+	fi
+	if [ "$oldcontext" != "$context" ]; then
+		case "${oldcontext%%::*}" in
+			drive)
+				if [ -z "$drive_id" ]; then
+					#XXX should never happen
+					_error "ID not set for drive"
+					return $?
+				fi
+				if [ -z "$drive_file" ]; then
+					_error "file not set in [drive::$drive_id]"
+					return $?
+				fi
+				[ -n "$drive_driver" ] || drive_driver="virtio-blk-pci"
+				[ -n "$drive_format" ] || drive_format="raw"
+				QEMU_ARGS="$QEMU_ARGS -drive file=$drive_file,if=none,format=$drive_format,id=$drive_id -device $drive_driver,drive=$drive_id"
+				drive_driver=
+				drive_file=
+				drive_format=
+				drive_id=
+				;;
+			network)
+				if [ -z "$network_id" ]; then
+					#XXX should never happen
+					_error "ID not set for network"
+					return $?
+				fi
+				[ -n "$network_driver" ] || network_driver="virtio-net"
+				if [ -z "$network_interface" ]; then
+					network_interface="$(_qemu_network_interface)"
+					[ $? -eq 0 ] || return 2
+				fi
+				[ -n "$network_mac" ] || network_mac="$(_qemu_network_macaddress "$hostname" "$network_id")"
+				[ -n "$network_type" ] || network_type="tap"
+				QEMU_ARGS="$QEMU_ARGS -netdev $network_type,id=$network_id,ifname=$network_interface,script=$network_on_up,downscript=$network_on_down -device $network_driver,netdev=$network_id,mac=$network_mac"
+				#TODO report errors (here it is too late)
+				[ -n "$network_bridge" ] && $DEBUG "$BRCONFIG" "$network_bridge" add "$network_interface"
+				QEMU_NETWORK_INTERFACES="$QEMU_NETWORK_INTERFACES $network_interface"
+				network_bridge=
+				network_driver=
+				network_id=
+				network_interface=
+				network_mac=
+				network_type=
+				network_on_down=
+				network_on_up=
+				;;
+		esac
+	fi
+	oldcontext="${context}"
+}
+
+
+#debug
+_debug()
+{
+	[ $VERBOSE -ge 3 ] && echo "$@" 1>&2
+	[ $DRYRUN -ne 0 ] || "$@"
+}
+
+
+#error
+_error()
+{
+	echo "$PROGNAME: $@" 1>&2
+	return 2
+}
+
+
+#info
+_info()
+{
+	[ $VERBOSE -ge 2 ] && echo "$@" 1>&2
+}
+
+
+#usage
+_usage()
+{
+	[ $# -ge 1 ] && _error "$@"
+	echo "Usage: $PROGNAME [-nqv][-a arch][-u user] hostname [filename]" 1>&2
+	return 1
+}
+
+
+#main
+_edgebsd_qemu "$@"

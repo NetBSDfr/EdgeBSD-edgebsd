@@ -47,7 +47,8 @@ dist:
 		$(PACKAGE)-$(VERSION)/doc/template.netbsd.amd64 \
 		$(PACKAGE)-$(VERSION)/doc/project.conf \
 		$(PACKAGE)-$(VERSION)/src/Makefile \
-		$(PACKAGE)-$(VERSION)/src/edgebsd-gueststat \
+		$(PACKAGE)-$(VERSION)/src/edgebsd-gueststat.in \
+		$(PACKAGE)-$(VERSION)/src/edgebsd-qemu.in \
 		$(PACKAGE)-$(VERSION)/src/nvmm-xl.in \
 		$(PACKAGE)-$(VERSION)/src/project.conf \
 		$(PACKAGE)-$(VERSION)/tests/Makefile \
