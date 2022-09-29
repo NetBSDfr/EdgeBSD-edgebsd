@@ -13,19 +13,19 @@
 # nvmmdomains_config	This optional variable is a format string that
 #			represents the path to the configuration file for
 #			each domain.  "%s" is substituted with the name of
-#			the domain. The default is "@PKG_SYSCONFDIR@/nvmm/%s".
+#			the domain. The default is "@PKG_SYSCONFDIR@/%s".
 #
 # nvmmdomains_prehook	This optional variable is a format string that
 #			represents the command to run, if it exists, before
 #			starting each domain.  "%s" is substituted with the
 #			name of the domain.  The default is
-#			"@PKG_SYSCONFDIR@/nvmm/%s-pre".
+#			"@PKG_SYSCONFDIR@/%s-pre".
 #
 # nvmmdomains_posthook	This optional variable is a format string that
 #			represents the command to run, if it exists, after
 #			stopping each domain.  "%s" is substituted with the
 #			name of the domain.  The default is
-#			"@PKG_SYSCONFDIR@/nvmm/%s-post".
+#			"@PKG_SYSCONFDIR@/%s-post".
 #
 # nvmmdomains_user	This optional variable is a username for qemu to drop
 #			privileges to.
@@ -131,8 +131,8 @@ nvmmdomains_stop()
 
 load_rc_config $name
 
-: ${nvmmdomains_config="@PKG_SYSCONFDIR@/nvmm/%s"}
-: ${nvmmdomains_prehook="@PKG_SYSCONFDIR@/nvmm/%s-pre"}
-: ${nvmmdomains_posthook="@PKG_SYSCONFDIR@/nvmm/%s-post"}
+: ${nvmmdomains_config="@PKG_SYSCONFDIR@/%s"}
+: ${nvmmdomains_prehook="@PKG_SYSCONFDIR@/%s-pre"}
+: ${nvmmdomains_posthook="@PKG_SYSCONFDIR@/%s-post"}
 
 run_rc_command "$1"
