@@ -286,7 +286,8 @@ _qemu_run()
 
 	#lock if necessary
 	if [ -n "$QEMU_SOCKET" ]; then
-		$DEBUG $MKDIR -m 0700 "${QEMU_SOCKET%/*}"
+		$DEBUG $MKDIR -p -m 0700 "${QEMU_SOCKET%/*/*}" &&
+			$DEBUG $MKDIR -m 0700 "${QEMU_SOCKET%/*}"
 		if [ $? -ne 0 ]; then
 			_error "$QEMU_SOCKET: Could not create the socket"
 			return $?
