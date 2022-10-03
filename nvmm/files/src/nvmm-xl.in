@@ -88,7 +88,7 @@ _nvmm_xl()
 	shift
 
 	case "$command" in
-		cd-eject|console|create|destroy|list|monitor|reboot|shutdown)
+		cd-eject|console|create|destroy|list|monitor|network|reboot|shutdown)
 			command=$(echo "$command" | $TR -- - _)
 
 			"_nvmm_xl_$command" "$@"
@@ -337,6 +337,55 @@ _nvmm_xl_monitor()
 }
 
 
+#nvmm_xl_network
+_nvmm_xl_network()
+{
+	while getopts "O:qv" name; do
+		case "$name" in
+			O)
+				eval "${OPTARG%%=*}"="${OPTARG#*=}"
+				;;
+			q)
+				VERBOSE=0
+				;;
+			v)
+				VERBOSE=$((VERBOSE + 1))
+				;;
+			*)
+				_usage
+				return $?
+				;;
+		esac
+	done
+	shift $((OPTIND - 1))
+	if [ $# -lt 3 ]; then
+		_usage "network: A domain, an interface, a sub-command are required"
+		return $?
+	fi
+	domain="$1"
+	interface="$2"
+	subcommand="$3"
+
+	#XXX provide this help more easily
+	case "$subcommand" in
+		"connect")
+			subcommand="set_link $interface on"
+			;;
+		"disconnect")
+			subcommand="set_link $interface off"
+			;;
+		"help"|*)
+			_usage "network: $subcommand: Unsupported sub-command
+Sub-commands supported:
+  connect
+  disconnect
+"
+			;;
+	esac
+	_nvmm_xl_command "$domain" "$subcommand"
+}
+
+
 #nvmm_xl_reboot
 _nvmm_xl_reboot()
 {
@@ -416,7 +465,8 @@ _usage()
 	echo "  create [-c]	Start a Virtual Machine instance" 1>&2
 	echo "  destroy	Power off a Virtual Machine instance" 1>&2
 	echo "  list		List the Virtual Machine instances available" 1>&2
-	echo "  monitor		Attach the monitor of a Virtual Machine instance" 1>&2
+	echo "  monitor	Attach the monitor of a Virtual Machine instance" 1>&2
+	echo "  network	Manage the network interfaces of a Virtual Machine instance" 1>&2
 	echo "  reboot	Reboot a Virtual Machine instance" 1>&2
 	echo "  shutdown [-F]	Stop a Virtual Machine instance gracefully" 1>&2
 	return 1
