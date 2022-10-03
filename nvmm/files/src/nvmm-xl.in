@@ -85,11 +85,12 @@ _nvmm_xl()
 		return $?
 	fi
 	command="$1"
-	command=$(echo "$command" | $TR -- - _)
 	shift
 
 	case "$command" in
-		cd_eject|console|create|destroy|list|monitor|reboot|shutdown)
+		cd-eject|console|create|destroy|list|monitor|reboot|shutdown)
+			command=$(echo "$command" | $TR -- - _)
+
 			"_nvmm_xl_$command" "$@"
 			return $?
 			;;
