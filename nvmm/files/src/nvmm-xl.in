@@ -88,7 +88,15 @@ _nvmm_xl()
 	shift
 
 	case "$command" in
-		cd-eject|console|create|destroy|list|monitor|network|reboot|shutdown)
+		"cd-eject" \
+		|"console" \
+		|"create" \
+		|"destroy" \
+		|"list" \
+		|"monitor" \
+		|"network" \
+		|"reboot" \
+		|"shutdown")
 			command=$(echo "$command" | $TR -- - _)
 
 			"_nvmm_xl_$command" "$@"
