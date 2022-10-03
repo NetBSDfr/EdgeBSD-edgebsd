@@ -150,7 +150,7 @@ _nvmm_xl_command()
 	socket="$RUNDIR/$domain/socket"
 	shift
 
-	echo "$@" | $DEBUG $NC -N -U "$socket" > "$DEVNULL"
+	$DEBUG echo "$@" | $DEBUG $NC -N -U "$socket" > "$DEVNULL"
 }
 
 
@@ -165,7 +165,7 @@ _nvmm_xl_command_sync()
 	socket="$RUNDIR/$domain/socket"
 	shift
 
-	echo "$@" | $DEBUG $NC -U "$socket" > "$DEVNULL"
+	$DEBUG echo "$@" | $DEBUG $NC -U "$socket" > "$DEVNULL"
 }
 
 
