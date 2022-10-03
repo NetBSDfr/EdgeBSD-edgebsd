@@ -95,8 +95,10 @@ _nvmm_xl()
 		|"list" \
 		|"monitor" \
 		|"network" \
+		|"pause" \
 		|"reboot" \
-		|"shutdown")
+		|"shutdown" \
+		|"unpause")
 			command=$(echo "$command" | $TR -- - _)
 
 			"_nvmm_xl_$command" "$@"
@@ -417,6 +419,37 @@ Sub-commands supported:
 }
 
 
+#nvmm_xl_pause
+_nvmm_xl_pause()
+{
+	while getopts "O:qv" name; do
+		case "$name" in
+			O)
+				eval "${OPTARG%%=*}"="${OPTARG#*=}"
+				;;
+			q)
+				VERBOSE=0
+				;;
+			v)
+				VERBOSE=$((VERBOSE + 1))
+				;;
+			*)
+				_usage
+				return $?
+				;;
+		esac
+	done
+	shift $((OPTIND - 1))
+	if [ $# -ne 1 ]; then
+		_usage "pause: A domain is required"
+		return $?
+	fi
+	domain="$1"
+
+	_nvmm_xl_command "$domain" "stop"
+}
+
+
 #nvmm_xl_reboot
 _nvmm_xl_reboot()
 {
@@ -484,6 +517,37 @@ _nvmm_xl_shutdown()
 }
 
 
+#nvmm_xl_unpause
+_nvmm_xl_unpause()
+{
+	while getopts "O:qv" name; do
+		case "$name" in
+			O)
+				eval "${OPTARG%%=*}"="${OPTARG#*=}"
+				;;
+			q)
+				VERBOSE=0
+				;;
+			v)
+				VERBOSE=$((VERBOSE + 1))
+				;;
+			*)
+				_usage
+				return $?
+				;;
+		esac
+	done
+	shift $((OPTIND - 1))
+	if [ $# -ne 1 ]; then
+		_usage "unpause: A domain is required"
+		return $?
+	fi
+	domain="$1"
+
+	_nvmm_xl_command "$domain" "cont"
+}
+
+
 #usage
 _usage()
 {
@@ -498,8 +562,10 @@ _usage()
 	echo "  list		List the Virtual Machine instances available" 1>&2
 	echo "  monitor	Attach the monitor of a Virtual Machine instance" 1>&2
 	echo "  network	Manage the network interfaces of a Virtual Machine instance" 1>&2
+	echo "  pause	Pause a Virtual Machine instance" 1>&2
 	echo "  reboot	Reboot a Virtual Machine instance" 1>&2
 	echo "  shutdown [-F]	Stop a Virtual Machine instance gracefully" 1>&2
+	echo "  unpause	Unpause a Virtual Machine instance" 1>&2
 	return 1
 }
 
