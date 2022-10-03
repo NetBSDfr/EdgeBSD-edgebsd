@@ -295,6 +295,29 @@ _nvmm_xl_destroy()
 #nvmm_xl_list
 _nvmm_xl_list()
 {
+	while getopts "O:qv" name; do
+		case "$name" in
+			O)
+				eval "${OPTARG%%=*}"="${OPTARG#*=}"
+				;;
+			q)
+				VERBOSE=0
+				;;
+			v)
+				VERBOSE=$((VERBOSE + 1))
+				;;
+			*)
+				_usage
+				return $?
+				;;
+		esac
+	done
+	shift $((OPTIND - 1))
+	if [ $# -ne 0 ]; then
+		_usage "list: Parameters are not supported"
+		return $?
+	fi
+
 	#XXX output more information about each domain
 	echo "Name"
 	echo "NVMM"
