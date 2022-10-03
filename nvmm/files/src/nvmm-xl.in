@@ -151,7 +151,7 @@ _nvmm_xl_cd_eject()
 
 #nvmm_xl_command
 _nvmm_xl_command()
-{
+{(
 	if [ $# -lt 2 ]; then
 		_usage "command: A domain and a command are required"
 		return $?
@@ -161,12 +161,12 @@ _nvmm_xl_command()
 	shift
 
 	$DEBUG echo "$@" | $DEBUG $NC -N -U "$socket" > "$DEVNULL"
-}
+)}
 
 
 #nvmm_xl_command_sync
 _nvmm_xl_command_sync()
-{
+{(
 	if [ $# -lt 2 ]; then
 		_usage "command: A domain and a command are required"
 		return $?
@@ -176,7 +176,7 @@ _nvmm_xl_command_sync()
 	shift
 
 	$DEBUG echo "$@" | $DEBUG $NC -U "$socket" > "$DEVNULL"
-}
+)}
 
 
 #nvmm_xl_console
