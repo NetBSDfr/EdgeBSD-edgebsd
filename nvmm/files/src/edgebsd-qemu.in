@@ -35,7 +35,7 @@ BRCONFIG="/sbin/brconfig"
 DEBUG="_debug"
 ECHO="echo"
 case "$(uname -s)" in
-	Darwin)
+	"Darwin")
 		ECHO="/bin/echo"
 		;;
 esac
