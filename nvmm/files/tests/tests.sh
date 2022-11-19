@@ -29,7 +29,8 @@ PROGNAME="tests.sh"
 #executables
 DATE="date"
 DEBUG="_debug"
-NVMM_XL="../src/nvmm-xl"
+EDGEBSD_QEMU="$OBJDIR../src/edgebsd-qemu"
+NVMM_XL="$OBJDIR../src/nvmm-xl"
 
 
 #functions
@@ -39,9 +40,10 @@ _tests()
 	ret=0
 
 	$DATE
-	echo
-	_tests_usage						|| ret=2
-	_tests_list						|| ret=2
+	for test in usage list template; do
+		echo
+		"_tests_$test"					|| ret=2
+	done
 	return $ret
 }
 
@@ -49,6 +51,13 @@ _tests_list()
 {
 	echo "$PROGNAME: Testing the list"
 	$DEBUG $NVMM_XL list 2>&1
+}
+
+_tests_template()
+{
+	echo "$PROGNAME: Testing the template"
+	$DEBUG $EDGEBSD_QEMU -n -vvv "template.netbsd.amd64" \
+		"../doc/template.netbsd.amd64" 2>&1
 }
 
 _tests_usage()
