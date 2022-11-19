@@ -92,6 +92,7 @@ _nvmm_xl()
 		|"console" \
 		|"create" \
 		|"destroy" \
+		|"info" \
 		|"list" \
 		|"monitor" \
 		|"network" \
@@ -161,6 +162,26 @@ _nvmm_xl_command()
 	shift
 
 	$DEBUG echo "$@" | $DEBUG $NC -N -U "$socket" > "$DEVNULL"
+)}
+
+
+#nvmm_xl_command_output
+_nvmm_xl_command_output()
+{(
+	if [ $# -lt 2 ]; then
+		_usage "command: A domain and a command are required"
+		return $?
+	fi
+	domain="$1"
+	socket="$RUNDIR/$domain/socket"
+	shift
+
+	$DEBUG echo "$@" | $DEBUG $NC -N -U "$socket" | (cnt=0
+		prevline=
+		while read line; do
+			cnt=$((cnt + 1))
+			[ $cnt -gt 2 ] && echo "$line"
+		done)
 )}
 
 
@@ -299,6 +320,41 @@ _nvmm_xl_destroy()
 	domain="$1"
 
 	_nvmm_xl_command_sync "$domain" "quit"
+}
+
+
+#nvmm_xl_info
+_nvmm_xl_info()
+{
+	while getopts "O:qv" name; do
+		case "$name" in
+			O)
+				eval "${OPTARG%%=*}"="${OPTARG#*=}"
+				;;
+			q)
+				VERBOSE=0
+				;;
+			v)
+				VERBOSE=$((VERBOSE + 1))
+				;;
+			*)
+				_usage
+				return $?
+				;;
+		esac
+	done
+	shift $((OPTIND - 1))
+	if [ $# -lt 1 ]; then
+		_usage "info: A domain must be provided"
+		return $?
+	elif [ $# -gt 2 ]; then
+		_usage "info: A sub-command may be provided"
+		return $?
+	fi
+	domain="$1"
+	subcommand="$2"
+
+	_nvmm_xl_command_output "$domain" "info $subcommand"
 }
 
 
@@ -559,6 +615,7 @@ _usage()
 	echo "  console	Attach the console of a Virtual Machine instance" 1>&2
 	echo "  create [-c]	Start a Virtual Machine instance" 1>&2
 	echo "  destroy	Power off a Virtual Machine instance" 1>&2
+	echo "  info		Print information about a Virtual Machine instance" 1>&2
 	echo "  list		List the Virtual Machine instances available" 1>&2
 	echo "  monitor	Attach the monitor of a Virtual Machine instance" 1>&2
 	echo "  network	Manage the network interfaces of a Virtual Machine instance" 1>&2
