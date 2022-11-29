@@ -2,7 +2,7 @@
 
 PKGNAME=	edgebsd-tls-${VERSION}
 VERSION=	9
-PKGREVISION=	6
+PKGREVISION=	7
 CATEGORIES=	edgebsd
 
 MAINTAINER=	khorben@edgebsd.org
