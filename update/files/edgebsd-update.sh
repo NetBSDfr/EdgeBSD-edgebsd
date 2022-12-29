@@ -10,6 +10,7 @@
 $_rc_subr_loaded . @SYSCONFBASE@/rc.subr
 
 name="edgebsd-update"
+rcvar="edgebsd_update"
 command="@PREFIX@/sbin/edgebsd-update"
 start_cmd="edgebsd_update_start"
 stop_cmd=":"
