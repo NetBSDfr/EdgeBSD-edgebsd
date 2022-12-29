@@ -1,7 +1,7 @@
 PACKAGE	= edgebsd-update
 VERSION	= 9
 VENDOR	= EdgeBSD
-SUBDIRS	= doc src tests
+SUBDIRS	= doc src tests tools
 TARGETS	= tests
 RM	= rm -f
 LN	= ln -f
@@ -46,7 +46,7 @@ dist:
 		$(PACKAGE)-$(VERSION)/doc/manual.css.xml \
 		$(PACKAGE)-$(VERSION)/doc/project.conf \
 		$(PACKAGE)-$(VERSION)/src/Makefile \
-		$(PACKAGE)-$(VERSION)/src/edgebsd-update \
+		$(PACKAGE)-$(VERSION)/src/edgebsd-update.in \
 		$(PACKAGE)-$(VERSION)/src/project.conf \
 		$(PACKAGE)-$(VERSION)/tests/Makefile \
 		$(PACKAGE)-$(VERSION)/tests/destdir/boot \
@@ -58,6 +58,9 @@ dist:
 		$(PACKAGE)-$(VERSION)/tests/shlint.sh \
 		$(PACKAGE)-$(VERSION)/tests/tests.sh \
 		$(PACKAGE)-$(VERSION)/tests/project.conf \
+		$(PACKAGE)-$(VERSION)/tools/Makefile \
+		$(PACKAGE)-$(VERSION)/tools/subst.sh \
+		$(PACKAGE)-$(VERSION)/tools/project.conf \
 		$(PACKAGE)-$(VERSION)/Makefile \
 		$(PACKAGE)-$(VERSION)/README.md \
 		$(PACKAGE)-$(VERSION)/config.sh \
