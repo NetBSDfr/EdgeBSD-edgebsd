@@ -11,12 +11,18 @@ $_rc_subr_loaded . @SYSCONFBASE@/rc.subr
 
 name="edgebsd-update"
 rcvar="edgebsd_update"
-command="@PREFIX@/sbin/edgebsd-update"
+command="@PREFIX@/sbin/$name"
 start_cmd="edgebsd_update_start"
 stop_cmd=":"
-extra_commands="fetch"
+extra_commands="clean fetch"
+clean_cmd="edgebsd_update_clean"
 fetch_cmd="edgebsd_update_fetch"
 edgebsd_update_cachedir="/var/cache/$name"
+
+edgebsd_update_clean()
+{
+	rm -fr "$edgebsd_update_cachedir/pub"
+}
 
 edgebsd_update_fetch()
 {
