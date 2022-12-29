@@ -374,12 +374,11 @@ _arch_generic_update_kernel()
 	if [ "${bootedfile%.gz}" != "$bootedfile" ]; then
 		#compress the kernel
 		_info "Compressing kernel ${EDGEBSD_KERNEL}..."
-		#XXX creates files even in dry-run
-		$DEBUG $GZIP -f -c -- "$tmpdir/netbsd" > "$tmpdir/$bootedfile" &&
-			$DEBUG $MV -- "$tmpdir/$bootedfile" "$tmpdir/netbsd"
+		$DEBUG $GZIP -f -- "$tmpdir/netbsd" &&
+			$DEBUG $MV -- "$tmpdir/netbsd.gz" "$tmpdir/netbsd"
 		if [ $? -ne 0 ]; then
 			_error "$EDGEBSD_KERNEL: Could not compress the kernel"
-			$DEBUG $RM -- "$tmpdir/netbsd" "$tmpdir/$bootedfile"
+			$DEBUG $RM -- "$tmpdir/netbsd" "$tmpdir/netbsd.gz"
 			NOOP=0 $DEBUG $RMDIR -- "$tmpdir"
 			return $?
 		fi
