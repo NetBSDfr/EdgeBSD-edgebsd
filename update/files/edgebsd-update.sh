@@ -15,7 +15,7 @@ stop_cmd=":"
 
 edgebsd_update_start()
 {
-	EDGEBSD_UPDATE="@PREFIX@/sbin/edgebsd-update"
+	EDGEBSD_UPDATE="@PREFIX@/sbin/edgebsd-update -I"
 	EDGEBSD_MIRROR="/var/cache/edgebsd-update"
 
 	[ ! -d "$EDGEBSD_MIRROR" ] || $EDGEBSD_UPDATE $edgebsd_update_flags -M "$EDGEBSD_MIRROR"

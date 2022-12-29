@@ -2,7 +2,7 @@
 
 PKGNAME=	edgebsd-update-${VERSION}
 VERSION=	9
-PKGREVISION=	21
+PKGREVISION=	22
 CATEGORIES=	edgebsd
 
 MAINTAINER=	khorben@edgebsd.org
