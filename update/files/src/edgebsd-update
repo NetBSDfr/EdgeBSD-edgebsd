@@ -166,22 +166,14 @@ _edgebsd_update()
 	fi
 
 	#update the kernel
-	ret=0
 	clean_kernel=0
-	if [ $KERNEL -ne 0 ]; then
-		_info "Updating the kernel..."
-		case "$EDGEBSD_ARCH" in
-			amd64|evbarm|i386|sparc|sparc64)
-				"_arch_${EDGEBSD_ARCH}_update_kernel"
-				ret=$?
-				[ $ret -eq 0 ] && clean_kernel=1
-				;;
-			*)
-				ret=2
-				;;
-		esac
+	_update_kernel
+	ret=$?
+	if [ $ret -eq 0 ]; then
+		clean_kernel=1
+	else
+		_error "Could not update the kernel"
 	fi
-	[ $ret -eq 0 ] || _error "Could not update the kernel"
 
 	#update the sets
 	clean_sets=0
@@ -189,7 +181,7 @@ _edgebsd_update()
 	if [ $ret -eq 0 ]; then
 		_update_sets
 		ret=$?
-		if [ $? -eq 0 ]; then
+		if [ $ret -eq 0 ]; then
 			clean_sets=1
 		else
 			_error "Could not update the sets"
@@ -789,6 +781,24 @@ _update_configuration()
 		res=$?
 	fi
 	return $res
+}
+
+
+#update_kernel
+_update_kernel()
+{
+	#update the kernel
+	if [ $KERNEL -ne 0 ]; then
+		_info "Updating the kernel..."
+		case "$EDGEBSD_ARCH" in
+			amd64|evbarm|i386|sparc|sparc64)
+				"_arch_${EDGEBSD_ARCH}_update_kernel"
+				return $?
+				;;
+		esac
+		return 2
+	fi
+	return 0
 }
 
 
