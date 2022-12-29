@@ -10,15 +10,26 @@
 $_rc_subr_loaded . @SYSCONFBASE@/rc.subr
 
 name="edgebsd-update"
+command="@PREFIX@/sbin/edgebsd-update"
 start_cmd="edgebsd_update_start"
 stop_cmd=":"
+extra_commands="fetch"
+fetch_cmd="edgebsd_update_fetch"
+edgebsd_update_cachedir="/var/cache/$name"
+
+edgebsd_update_fetch()
+{
+	EDGEBSD_PATH="pub/EdgeBSD/EdgeBSD-$(uname -r | cut -d '.' -f 1)/$(uname -m)/binary/sets"
+
+	mkdir -p "$edgebsd_update_cachedir/$EDGEBSD_PATH" &&
+		cd "$edgebsd_update_cachedir/$EDGEBSD_PATH" &&
+		$command -n $edgebsd_update_flags
+}
 
 edgebsd_update_start()
 {
-	EDGEBSD_UPDATE="@PREFIX@/sbin/edgebsd-update -I"
-	EDGEBSD_MIRROR="/var/cache/edgebsd-update"
-
-	[ ! -d "$EDGEBSD_MIRROR" ] || $EDGEBSD_UPDATE $edgebsd_update_flags -M "$EDGEBSD_MIRROR"
+	[ ! -d "$edgebsd_update_cachedir" ] ||
+		$command -I -M "$edgebsd_update_cachedir" $edgebsd_update_flags
 }
 
 load_rc_config $name
