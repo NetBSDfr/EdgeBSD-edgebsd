@@ -2,11 +2,11 @@
 
 PKGNAME=	edgebsd-update-${VERSION}
 VERSION=	9
-PKGREVISION=	25
+PKGREVISION=	26
 CATEGORIES=	edgebsd
 
-MAINTAINER=	khorben@edgebsd.org
-HOMEPAGE=	https://www.edgebsd.org/
+MAINTAINER=	khorben@EdgeBSD.org
+HOMEPAGE=	https://www.EdgeBSD.org/
 COMMENT=	Update script for EdgeBSD
 LICENSE=	modified-bsd
 
