@@ -53,6 +53,7 @@ PKGIN="/usr/pkg/bin/pkgin"
 POSTINSTALL="/usr/sbin/postinstall"
 PRINTF="printf"
 PROGRESS="/usr/bin/progress"
+REBOOT="/sbin/reboot"
 RM="/bin/rm -f"
 RMDIR="/bin/rmdir"
 ROOTDEV=
@@ -74,6 +75,7 @@ EDGEBSD_MIRROR="ftp://ftp.EdgeBSD.org"
 EDGEBSD_PATH=
 EDGEBSD_VENDOR="EdgeBSD"
 ETCMTREE="/etc/mtree"
+INIT=0
 KERNEL=0
 [ -n "$TMPDIR" ] || TMPDIR="/tmp"
 MKTEMP_TEMPLATE="$TMPDIR/$PROGNAME-XXXXXX"
@@ -171,7 +173,7 @@ _edgebsd_update()
 	_update_kernel
 	ret=$?
 	if [ $ret -eq 0 ]; then
-		clean_kernel=1
+		[ $INIT -ne 0 -o -n "${EDGEBSD_MIRROR%%/*}" ] && clean_kernel=1
 	else
 		_error "Could not update the kernel"
 	fi
@@ -183,7 +185,7 @@ _edgebsd_update()
 		_update_sets
 		ret=$?
 		if [ $ret -eq 0 ]; then
-			clean_sets=1
+			[ $INIT -ne 0 -o -n "${EDGEBSD_MIRROR%%/*}" ] && clean_sets=1
 		else
 			_error "Could not update the sets"
 		fi
@@ -215,14 +217,25 @@ _edgebsd_update()
 	fi
 
 	#cleanup
-	[ $clean_sets -eq 1 ] && _clean_sets "$clean_sets_keep"
 	[ $clean_kernel -eq 1 ] && _clean_kernel
+	[ $clean_sets -eq 1 ] && _clean_sets "$clean_sets_keep"
 
 	if [ $ret -eq 0 ]; then
 		_info "Update successful."
 	else
 		_info "Some errors occurred."
 	fi
+
+	#reboot after update
+	if [ $ret -eq 0 ]; then
+		_update_reboot
+		ret=$?
+		if [ $ret -ne 0 ]; then
+			_error "Could not reboot after update"
+			return $?
+		fi
+	fi
+
 	return $ret
 }
 
@@ -322,6 +335,10 @@ _arch_generic_update_kernel()
 	file="kern-${EDGEBSD_KERNEL}${SETEXT}"
 	[ -z "${EDGEBSD_MIRROR##/*}" ] && file="$EDGEBSD_PATH/$file"
 	if [ ! -f "$file" ]; then
+		if [ $INIT -ne 0 ]; then
+			_info "$EDGEBSD_KERNEL: Skipping kernel update (update file missing)"
+			return $?
+		fi
 		_error "$EDGEBSD_KERNEL: Update file missing"
 		return $?
 	fi
@@ -392,6 +409,17 @@ _arch_generic_update_kernel()
 		return $?
 	fi
 	NOOP=0 $DEBUG $RMDIR -- "$tmpdir"
+	if [ $INIT -ne 0 ]; then
+		#remove the kernel set
+		_clean_kernel
+		#reboot after kernel update
+		_info "Rebooting after kernel update..."
+		$DEBUG $REBOOT
+		if [ $? -ne 0 ]; then
+			_error "Could not reboot after kernel update"
+			return $?
+		fi
+	fi
 	return 0
 }
 
@@ -480,10 +508,13 @@ _arch_sparc64_update_kernel()
 #clean_kernel
 _clean_kernel()
 {
-	if [ $KERNEL -ne 0 -a -n "${EDGEBSD_MIRROR##/*}" ]; then
-		$DEBUG $RM -- "kern-${EDGEBSD_KERNEL}${SETEXT}"
-		[ $VERIFY -ne 0 ] && $DEBUG $RM -- \
-			"kern-${EDGEBSD_KERNEL}${SETEXT}.sig"
+	if [ $KERNEL -ne 0 ]; then
+		file="kern-${EDGEBSD_KERNEL}${SETEXT}"
+		[ -z "${EDGEBSD_MIRROR##/*}" ] && file="$EDGEBSD_PATH/$file"
+		[ ! -f "$file" ]				&& continue
+		_info "Removing downloaded kernel ${EDGEBSD_KERNEL}..."
+		$DEBUG $RM -- "$file"
+		[ $VERIFY -ne 0 ] && $DEBUG $RM -- "$file.sig"
 	fi
 }
 
@@ -493,13 +524,15 @@ _clean_sets()
 {
 	keep="$1"
 
-	[ -n "${EDGEBSD_MIRROR##/*}" ]				|| return
 	for set in $SETS; do
 		[ -n "$keep" -a "$keep" = "$set" ]		&& continue
-		[ -f "${set}${SETEXT}" ]			|| continue
+		file="$set${SETEXT}"
+		[ -z "${EDGEBSD_MIRROR##/*}" ] && file="$EDGEBSD_PATH/$file"
+		[ ! -f "$file" ]				&& continue
 		_info "Removing downloaded set ${set}..."
-		$DEBUG $RM -- "${set}${SETEXT}"
-		[ $VERIFY -ne 0 ] && $DEBUG $RM -- "${set}${SETEXT}.sig"
+		#XXX ignore errors
+		$DEBUG $RM -- "$file"
+		[ $VERIFY -ne 0 ] && $DEBUG $RM -- "$file.sig"
 	done
 }
 
@@ -749,7 +782,6 @@ _progress()
 	#only use progress(1) if in interactive and verbose mode
 	if [ -n "$PS1" -a $VERBOSE -ge 1 ]; then
 		$DEBUG $PROGRESS -p "$prefix" $options "$filename" -- "$@"
-		echo
 	else
 		$DEBUG $cat -- "$filename" | "$@"
 	fi
@@ -860,6 +892,22 @@ _update_packages()
 }
 
 
+#update_reboot
+_update_reboot()
+{
+	if [ $INIT -ne 0 ]; then
+		if [ -a $UPDATE_ETC -eq 0 -a -z "$clean_sets_keep" ]; then
+			_info "Rebooting after set update..."
+			$DEBUG $REBOOT
+			return $?
+		else
+			_error "Partial update (not rebooting)"
+		fi
+	fi
+	return 0
+}
+
+
 #update_sets
 _update_sets()
 {
@@ -870,6 +918,10 @@ _update_sets()
 		file="${set}${SETEXT}"
 		[ -z "${EDGEBSD_MIRROR##/*}" ] && file="$EDGEBSD_PATH/$file"
 		if [ ! -f "$file" ]; then
+			if [ $INIT -ne 0 ]; then
+				_info "$set: Skipping set update (update file missing)"
+				continue
+			fi
 			_error "$set: Set file missing"
 			return $?
 		fi
@@ -903,15 +955,16 @@ _update_sets()
 #usage
 _usage()
 {
-	echo "Usage: $PROGNAME [-BbKkmnpqSsv][-D destdir][-M mirror][-P path][-r release]" 1>&2
+	echo "Usage: $PROGNAME [-BbIKkmnpqSsv][-D destdir][-M mirror][-P path][-r release]" 1>&2
 	echo "  -B	Do not update the bootloader" 1>&2
 	echo "  -b	Update the bootloader" 1>&2
 	echo "  -D	Specify a different directory where to update" 1>&2
+	echo "  -I	Perform a boot-time update" 1>&2
 	echo "  -K	Do not update the kernel" 1>&2
 	echo "  -k	Update the kernel" 1>&2
 	echo "  -M	Specify a different mirror when downloading" 1>&2
 	echo "  -m	Update the kernel modules" 1>&2
-	echo "  -n	Download the sets but do not install them" 1>&2
+	echo "  -n	Download the sets but do not actually update" 1>&2
 	echo "  -P	Full path to the sets" 1>&2
 	echo "  -p	Update the packages" 1>&2
 	echo "  -q	Enable quiet mode" 1>&2
@@ -934,7 +987,7 @@ _verify()
 
 #main
 #parse arguments
-while getopts "D:O:M:P:BbKkmnpqr:Ssv" name; do
+while getopts "D:O:M:P:BbIKkmnpqr:Ssv" name; do
 	case "$name" in
 		D)
 			DESTDIR="$OPTARG"
@@ -950,6 +1003,11 @@ while getopts "D:O:M:P:BbKkmnpqr:Ssv" name; do
 			;;
 		b)
 			BOOTLOADER=1
+			;;
+		I)
+			BOOTLOADER=1
+			KERNEL=1
+			INIT=1
 			;;
 		K)
 			KERNEL=0
