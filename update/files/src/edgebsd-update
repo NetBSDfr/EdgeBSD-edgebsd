@@ -320,6 +320,10 @@ _arch_generic_update_kernel()
 {
 	file="kern-${EDGEBSD_KERNEL}${SETEXT}"
 	[ -z "${EDGEBSD_MIRROR##/*}" ] && file="$EDGEBSD_PATH/$file"
+	if [ ! -f "$file" ]; then
+		_error "$EDGEBSD_KERNEL: Update file missing"
+		return $?
+	fi
 	if [ $VERIFY -ne 0 ]; then
 		_info "Verifying kernel ${EDGEBSD_KERNEL}..."
 		_verify "$file"
@@ -826,18 +830,22 @@ _update_sets()
 	_info "Updating the sets..."
 	$MKDIR -- "$DESTDIR/"
 	for set in $SETS; do
-		if [ "$set" = "etc" ]; then
-			UPDATE_ETC=1
-			#skip the "etc" set if already installed
-			[ -f "$DESTDIR$ETCMTREE/set.$set" ]	&& continue
-		fi
 		file="${set}${SETEXT}"
 		[ -z "${EDGEBSD_MIRROR##/*}" ] && file="$EDGEBSD_PATH/$file"
+		if [ ! -f "$file" ]; then
+			_error "$set: Set file missing"
+			return $?
+		fi
 		if [ $VERIFY -ne 0 ]; then
 			_info "Verifying set ${set}..."
 			_verify "$file"
 			res=$?
 			[ $res -eq 0 ]				|| return $res
+		fi
+		if [ "$set" = "etc" ]; then
+			UPDATE_ETC=1
+			#skip the "etc" set if already installed
+			[ -f "$DESTDIR$ETCMTREE/set.$set" ]	&& continue
 		fi
 		_progress -f "$file" -p "$($PRINTF "%-7s " "${set}")" \
 			$TAR -xzpf - -C "$DESTDIR/"
