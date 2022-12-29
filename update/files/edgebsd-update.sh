@@ -17,7 +17,6 @@ stop_cmd=":"
 extra_commands="clean fetch"
 clean_cmd="edgebsd_update_clean"
 fetch_cmd="edgebsd_update_fetch"
-edgebsd_update_cachedir="/var/cache/$name"
 
 edgebsd_update_clean()
 {
@@ -30,7 +29,7 @@ edgebsd_update_fetch()
 
 	mkdir -p "$edgebsd_update_cachedir/$EDGEBSD_PATH" &&
 		cd "$edgebsd_update_cachedir/$EDGEBSD_PATH" &&
-		$command -n $edgebsd_update_flags
+		$command -I -n $edgebsd_update_flags
 }
 
 edgebsd_update_start()
@@ -40,4 +39,5 @@ edgebsd_update_start()
 }
 
 load_rc_config $name
+edgebsd_update_cachedir=${edgebsd_update_cachedir-"/var/cache/$name"}
 run_rc_command "$1"
