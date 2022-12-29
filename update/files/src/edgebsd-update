@@ -398,6 +398,30 @@ _arch_generic_update_kernel()
 _arch_i386_update_bootloader()
 {
 	_arch_generic_update_bootloader				|| return 2
+	#detect the boot method
+	bootmethod=$($SYSCTL -n "machdep.bootmethod" 2> "$DEVNULL")
+	if [ $? -ne 0 -o -z "$bootmethod" ]; then
+		_error "Could not detect the boot method (assuming BIOS)"
+		bootmethod="BIOS"
+	fi
+	case "$bootmethod" in
+		UEFI)
+			#TODO update the EFI boot file
+			return 0
+			;;
+		BIOS)
+			_arch_i386_update_bootloader_bios
+			return $?
+			;;
+		*)
+			_error "$bootmethod: Unsupported boot method"
+			return $?
+			;;
+	esac
+}
+
+_arch_i386_update_bootloader_bios()
+{
 	#XXX require the root device to be set
 	if [ -z "$ROOTDEV" ]; then
 		_error "Could not update the bootloader (root device not set)"
