@@ -33,6 +33,7 @@ umask 022
 PROGNAME="edgebsd-update"
 #executables
 CAT="/bin/cat"
+CMP="/usr/bin/cmp"
 CP="/bin/cp -af"
 DEBUG="_debug"
 DUMPFS="/usr/sbin/dumpfs"
@@ -295,21 +296,21 @@ _arch_generic_update_bootloader()
 {
 	if [ -f "$DESTDIR$USRMDECBOOT" ]; then
 		if [ -f "$DESTDIR/altroot/boot" ]; then
-			$DEBUG $INSTALL -m 0444 "$DESTDIR$USRMDECBOOT" \
+			_update_file 0444 "$DESTDIR$USRMDECBOOT" \
 				"$DESTDIR/altroot/boot"		|| return 2
 		fi
 		if [ -f "$DESTDIR/boot" ]; then
-			$DEBUG $INSTALL -m 0444 "$DESTDIR$USRMDECBOOT" \
+			_update_file 0444 "$DESTDIR$USRMDECBOOT" \
 				"$DESTDIR/boot"			|| return 2
 		fi
 	fi
 	if [ -f "$DESTDIR$USRMDECPREKERN" ]; then
 		if [ -f "$DESTDIR/altroot/prekern" ]; then
-			$DEBUG $INSTALL -m 0444 "$DESTDIR$USRMDECPREKERN" \
+			_update_file 0444 "$DESTDIR$USRMDECPREKERN" \
 				"$DESTDIR/altroot/prekern"	|| return 2
 		fi
 		if [ -f "$DESTDIR/prekern" ]; then
-			$DEBUG $INSTALL -m 0444 "$DESTDIR$USRMDECPREKERN" \
+			_update_file 0444 "$DESTDIR$USRMDECPREKERN" \
 				"$DESTDIR/prekern"		|| return 2
 		fi
 	fi
@@ -785,6 +786,18 @@ _update_configuration()
 		res=$?
 	fi
 	return $res
+}
+
+
+#update_file
+_update_file()
+{
+	mode="$1"
+	src="$2"
+	dst="$3"
+
+	$DEBUG $CMP "$src" "$dst" > "$DEVNULL"
+	[ $? -eq 0 ] || $DEBUG $INSTALL -m "$mode" "$src" "$dst"
 }
 
 
