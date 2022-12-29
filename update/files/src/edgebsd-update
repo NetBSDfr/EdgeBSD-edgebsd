@@ -211,7 +211,7 @@ _edgebsd_update()
 	if [ $ret -eq 0 ]; then
 		_update_bootloader
 		ret=$?
-		[ $? -eq 0 ] || _error "Could not update the bootloader"
+		[ $ret -eq 0 ] || _error "Could not update the bootloader"
 	fi
 
 	#cleanup
