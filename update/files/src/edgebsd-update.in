@@ -109,10 +109,12 @@ _edgebsd_update()
 	_detect_release "$RELEASE"
 	case "$EDGEBSD_RELEASE/$EDGEBSD_ARCH" in
 		EdgeBSD-9/alpha|EdgeBSD-9/amd64|EdgeBSD-9/sparc64|\
-			NetBSD-9.*/alpha|NetBSD-9.*/amd64|NetBSD-9.*/sparc64)
+			NetBSD-9.*/alpha|NetBSD-9.*/amd64|NetBSD-9.*/sparc64|\
+			EdgeBSD-10/alpha|EdgeBSD-10/amd64|EdgeBSD-10/sparc64|\
+			NetBSD-10.*/alpha|NetBSD-10.*/amd64|NetBSD-10.*/sparc64)
 			[ -n "$SETEXT" ] || SETEXT=".tar.xz"
 			;;
-		EdgeBSD-6/*|EdgeBSD-7/*|EdgeBSD-8/*|EdgeBSD-9/*|\
+		EdgeBSD-6/*|EdgeBSD-7/*|EdgeBSD-8/*|EdgeBSD-9/*|EdgeBSD-10/*|\
 			NetBSD-2.*|NetBSD-3.*|NetBSD-4.*|NetBSD-5.*|\
 			NetBSD-6.*/*|NetBSD-7.*/*|NetBSD-8.*/*|NetBSD-9.*/*)
 			[ -n "$SETEXT" ] || SETEXT=".tgz"
@@ -568,7 +570,7 @@ _detect_release()
 {
 	if [ -n "$1" ]; then
 		EDGEBSD_RELEASE="$EDGEBSD_VENDOR-$1"
-	else
+	elif [ -z "$EDGEBSD_RELEASE" ]; then
 		EDGEBSD_RELEASE=$($UNAME -r)
 		case "$EDGEBSD_VENDOR" in
 			NetBSD)
