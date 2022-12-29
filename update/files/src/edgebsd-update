@@ -511,10 +511,15 @@ _clean_kernel()
 	if [ $KERNEL -ne 0 ]; then
 		file="kern-${EDGEBSD_KERNEL}${SETEXT}"
 		[ -z "${EDGEBSD_MIRROR##/*}" ] && file="$EDGEBSD_PATH/$file"
-		[ ! -f "$file" ]				&& continue
-		_info "Removing downloaded kernel ${EDGEBSD_KERNEL}..."
-		$DEBUG $RM -- "$file"
-		[ $VERIFY -ne 0 ] && $DEBUG $RM -- "$file.sig"
+		#XXX ignore errors
+		if [ -f "$file" ]; then
+			_info "Removing downloaded kernel ${EDGEBSD_KERNEL}..."
+			$DEBUG $RM -- "$file"
+		fi
+		if [ $VERIFY -ne 0 -a -f "$file.sig" ]; then
+			_info "Removing downloaded signature for kernel ${EDGEBSD_KERNEL}..."
+			$DEBUG $RM -- "$file.sig"
+		fi
 	fi
 }
 
@@ -528,11 +533,15 @@ _clean_sets()
 		[ -n "$keep" -a "$keep" = "$set" ]		&& continue
 		file="$set${SETEXT}"
 		[ -z "${EDGEBSD_MIRROR##/*}" ] && file="$EDGEBSD_PATH/$file"
-		[ ! -f "$file" ]				&& continue
-		_info "Removing downloaded set ${set}..."
 		#XXX ignore errors
-		$DEBUG $RM -- "$file"
-		[ $VERIFY -ne 0 ] && $DEBUG $RM -- "$file.sig"
+		if [ -f "$file" ]; then
+			_info "Removing downloaded set ${set}..."
+			$DEBUG $RM -- "$file"
+		fi
+		if [ $VERIFY -ne 0 -a -f "$file.sig" ]; then
+			_info "Removing downloaded signature for set ${set}..."
+			$DEBUG $RM -- "$file.sig"
+		fi
 	done
 }
 
