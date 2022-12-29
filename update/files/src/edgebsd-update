@@ -896,7 +896,7 @@ _update_packages()
 _update_reboot()
 {
 	if [ $INIT -ne 0 ]; then
-		if [ $UPDATE_ETC -eq 0 -a -z "$clean_sets_keep" ]; then
+		if [ $UPDATE_ETC -eq 1 -a -z "$clean_sets_keep" ]; then
 			_info "Rebooting after set update..."
 			$DEBUG $REBOOT
 			return $?
