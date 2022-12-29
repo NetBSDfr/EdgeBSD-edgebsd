@@ -590,7 +590,7 @@ _download()
 {
 	file="$1"
 
-	$DEBUG $FTP "$EDGEBSD_PATH/$file"
+	NOOP=0 $DEBUG $FTP "$EDGEBSD_PATH/$file"
 	res=$?
 	[ $res -eq 0 ] || $DEBUG $RM -- "$file"
 	return $res
