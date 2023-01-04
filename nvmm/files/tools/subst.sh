@@ -29,18 +29,19 @@ CONFIGSH="${0%/subst.sh}/../config.sh"
 PREFIX="/usr/local"
 BINDIR=
 DATADIR=
+DEVNULL="/dev/null"
 INCLUDEDIR=
 LDSO=
 LIBDIR=
 LIBEXECDIR=
 MANDIR=
 PROGNAME="subst.sh"
+SBINDIR=
 SYSCONFDIR=
 #executables
 CHMOD="chmod"
 DATE="date"
 DEBUG="_debug"
-DEVNULL="/dev/null"
 INSTALL="install"
 MKDIR="mkdir -m 0755 -p"
 RM="rm -f"
@@ -85,6 +86,7 @@ _subst()
 		SYSCONFDIR="$PREFIX/etc"
 		[ "$PREFIX" = "/usr" ] && SYSCONFDIR="/etc"
 	fi
+	[ -z "$SBINDIR" ] && SBINDIR="$PREFIX/sbin"
 
 	while [ $# -gt 0 ]; do
 		target="$1"
@@ -128,6 +130,7 @@ _subst()
 			-e "s;@LIBEXECDIR@;$LIBEXECDIR;g" \
 			-e "s;@MANDIR@;$MANDIR;g" \
 			-e "s;@PWD@;$PWD;g" \
+			-e "s;@SBINDIR@;$SBINDIR;g" \
 			-e "s;@SYSCONFDIR@;$SYSCONFDIR;g" \
 			-- "$source" > "$target"
 		if [ $? -ne 0 ]; then
@@ -139,6 +142,7 @@ _subst()
 	done
 	return 0
 }
+
 
 #debug
 _debug()
