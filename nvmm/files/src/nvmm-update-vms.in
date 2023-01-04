@@ -35,12 +35,12 @@ CONFIGCTL="configctl"
 DEBUG="_debug"
 EDGEBSD_UPDATE="@SBINDIR@/edgebsd-update"
 MOUNT="/sbin/mount"
-PROGNAME="nvmm-update-vms"
 SYSCTL="/sbin/sysctl"
 UMOUNT="/sbin/umount"
 VNDCONFIG="/usr/sbin/vndconfig"
 #settings
 MOUNTPOINT="/mnt/xen"
+PROGNAME="nvmm-update-vms"
 SYSCONFDIR="@SYSCONFDIR@"
 VERBOSE=1
 
