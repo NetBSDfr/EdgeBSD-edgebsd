@@ -43,7 +43,6 @@ TR="tr"
 CHROOTDIR=
 DEVNULL="/dev/null"
 DRYRUN=0
-PREFIX="@PREFIX@"
 PROGNAME="nvmm-xl"
 RUNAS=
 RUNDIR="/var/run/nvmm"
