@@ -1,0 +1,125 @@
+#!/bin/sh
+#Copyright (c) 2023 Pierre Pronchery <khorben@EdgeBSD.org>
+#This file is part of EdgeBSD NVMM
+#This code is derived from software contributed to the EdgeBSD Project
+#by Pierre Pronchery <khorben@EdgeBSD.org>
+#
+#Redistribution and use in source and binary forms, with or without
+#modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+#THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+#AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+#IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+#DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+#FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+#DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+#SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+#CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+#OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+#OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+
+
+#variables
+#essential
+VENDOR="@VENDOR@"
+PACKAGE="@PACKAGE@"
+#executables
+CONFIGCTL="configctl"
+DEBUG="_debug"
+EDGEBSD_UPDATE="@SBINDIR@/edgebsd-update"
+MOUNT="/sbin/mount"
+PROGNAME="nvmm-update-vms"
+SYSCTL="/sbin/sysctl"
+UMOUNT="/sbin/umount"
+VNDCONFIG="/usr/sbin/vndconfig"
+#settings
+MOUNTPOINT="/mnt/xen"
+SYSCONFDIR="@SYSCONFDIR@"
+VERBOSE=1
+
+#load local settings
+[ -f "$SYSCONFDIR/$VENDOR/$PACKAGE/$PROGNAME.conf" ] &&
+	. "$SYSCONFDIR/$VENDOR/$PACKAGE/$PROGNAME.conf"
+[ -n "$HOME" -a -f "$HOME/.config/$VENDOR/$PACKAGE/$PROGNAME.conf" ] &&
+	. "$HOME/.config/$VENDOR/$PACKAGE/$PROGNAME.conf"
+
+
+#functions
+#debug
+_debug()
+{
+	[ $VERBOSE -le 2 ] || echo "$@" 1>&2
+	"$@"
+}
+
+
+#error
+_error()
+{
+	echo "$PROGNAME: $@"
+	return 2
+}
+
+
+#info
+_info()
+{
+	echo "$PROGNAME: $@"
+}
+
+ret=0
+
+#find a vnd device
+disknames=$($SYSCTL "hw.disknames")
+i=0
+for diskname in $disknames; do
+	[ "$diskname" = "vnd$i" ] && i=$((i + 1))
+done
+VND="vnd$i"
+echo "$VND"
+
+#update the VMs
+for filename in "$SYSCONFDIR/EdgeBSD/edgebsd-nvmm/hosts/"*; do
+	[ -f "$filename" ] || continue
+	name=$($DEBUG $CONFIGCTL -f "$filename" "name")
+	drive=$($DEBUG $CONFIGCTL -f "$filename" "drive::hd0.file")
+	[ -n "$name" -a -n "$drive" -a -f "$drive" ] || continue
+	_info "$name: starting update..."
+	if ! $DEBUG $VNDCONFIG -c "$VND" "$drive"; then
+		_error "$name: could not create loop device"
+		ret=$?
+		break
+	fi
+	#XXX assumes a disklabel and partition
+	if ! $DEBUG $MOUNT "/dev/${VND}a" "$MOUNTPOINT"; then
+		$DEBUG $VNDCONFIG -u "$VND"
+		_error "$name: could not mount"
+		ret=$?
+		continue
+	fi
+	if ! $DEBUG $EDGEBSD_UPDATE -D "/mnt/xen"; then
+		_error "$name: could not update"
+		ret=$?
+	else
+		_info "$name: update completed"
+	fi
+	if ! $DEBUG $UMOUNT "/mnt/xen"; then
+		$DEBUG $VNDCONFIG -u "$VND"
+		_error "$name: could not unmount"
+		ret=$?
+		break
+	fi
+	if ! $DEBUG $VNDCONFIG -u "$VND"; then
+		_error "$name: could not remove loop device"
+		ret=$?
+		break
+	fi
+done
+exit $ret
