@@ -1,4 +1,4 @@
-TARGETS	= $(OBJDIR)edgebsd-gueststat $(OBJDIR)edgebsd-qemu $(OBJDIR)nvmm-xl
+TARGETS	= $(OBJDIR)edgebsd-gueststat $(OBJDIR)edgebsd-qemu $(OBJDIR)nvmm-update-vms $(OBJDIR)nvmm-xl
 OBJDIR	=
 PREFIX	= /usr/local
 DESTDIR	=
@@ -16,12 +16,16 @@ $(OBJDIR)edgebsd-gueststat: edgebsd-gueststat.in ../tools/subst.sh
 $(OBJDIR)edgebsd-qemu: edgebsd-qemu.in ../tools/subst.sh
 	../tools/subst.sh -P "$(PREFIX)" -- "$(OBJDIR)edgebsd-qemu"
 
+$(OBJDIR)nvmm-update-vms: nvmm-update-vms.in ../tools/subst.sh
+	../tools/subst.sh -P "$(PREFIX)" -- "$(OBJDIR)nvmm-update-vms"
+
 $(OBJDIR)nvmm-xl: nvmm-xl.in ../tools/subst.sh
 	../tools/subst.sh -P "$(PREFIX)" -- "$(OBJDIR)nvmm-xl"
 
 clean:
 	../tools/subst.sh -c -P "$(PREFIX)" -- "$(OBJDIR)edgebsd-gueststat"
 	../tools/subst.sh -c -P "$(PREFIX)" -- "$(OBJDIR)edgebsd-qemu"
+	../tools/subst.sh -c -P "$(PREFIX)" -- "$(OBJDIR)nvmm-update-vms"
 	../tools/subst.sh -c -P "$(PREFIX)" -- "$(OBJDIR)nvmm-xl"
 
 distclean: clean

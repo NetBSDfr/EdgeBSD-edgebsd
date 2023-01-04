@@ -50,6 +50,7 @@ dist:
 		$(PACKAGE)-$(VERSION)/src/Makefile \
 		$(PACKAGE)-$(VERSION)/src/edgebsd-gueststat.in \
 		$(PACKAGE)-$(VERSION)/src/edgebsd-qemu.in \
+		$(PACKAGE)-$(VERSION)/src/nvmm-update-vms.in \
 		$(PACKAGE)-$(VERSION)/src/nvmm-xl.in \
 		$(PACKAGE)-$(VERSION)/src/project.conf \
 		$(PACKAGE)-$(VERSION)/tests/Makefile \
