@@ -83,7 +83,6 @@ for diskname in $disknames; do
 	[ "$diskname" = "vnd$i" ] && i=$((i + 1))
 done
 VND="vnd$i"
-echo "$VND"
 
 #update the VMs
 for filename in "$SYSCONFDIR/EdgeBSD/edgebsd-nvmm/hosts/"*; do
