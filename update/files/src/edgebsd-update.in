@@ -37,7 +37,7 @@ CMP="/usr/bin/cmp"
 CP="/bin/cp -af"
 DEBUG="_debug"
 DUMPFS="/usr/sbin/dumpfs"
-FTP="/usr/bin/ftp -V"
+FTP="/usr/bin/ftp"
 GREP="grep"
 GZIP="/usr/bin/gzip -9"
 INSTALL="/usr/bin/install"
@@ -1053,7 +1053,8 @@ while getopts "D:O:M:P:BbIKkmnpqr:Ssv" name; do
 			;;
 		v)
 			VERBOSE=$((VERBOSE + 1))
-			[ $VERBOSE -ge 2 ] && FTP="/usr/bin/ftp"
+			[ $VERBOSE -ge 1 ] && FTP="/usr/bin/ftp"
+			[ $VERBOSE -ge 2 ] && FTP="/usr/bin/ftp -v"
 			;;
 		*)
 			_usage
