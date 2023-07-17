@@ -230,7 +230,7 @@ _edgebsd_tls_create()
 	[ -f "$OPENSSLCNF" ] && OPENSSLARGS="-config $OPENSSLCNF"
 	[ -n "$sign" -a $days -gt 0 ] && sign="$sign -days $days"
 	for hostname in "$@"; do
-		_create_hostname "$hostname"			|| ret=2
+		_create_hostname "$hostname" "$extensions"	|| ret=2
 	done
 	return $ret
 }
@@ -238,6 +238,7 @@ _edgebsd_tls_create()
 _create_hostname()
 {
 	hostname="$1"
+	extensions="$2"
 	s="$sign"
 
 	[ $user -eq 0 ] && case "$hostname" in
@@ -264,8 +265,8 @@ _create_hostname()
 		fi
 	fi
 	[ $VERBOSE -ge 2 ] && _info "$hostname$ext: Creating certificate..."
-	$DEBUG $OPENSSL req $OPENSSLARGS -new $s -nodes -sha256 \
-		-newkey "$bits" -keyout "$keyfile" $extensions \
+	$DEBUG $OPENSSL req $OPENSSLARGS -new $s -subj "/CN=$hostname" \
+		-nodes -sha256 -newkey "$bits" -keyout "$keyfile" $extensions \
 		-out "$hostname$ext"
 	if [ $? -ne 0 ]; then
 		_error "$hostname: Could not create the certificate"
