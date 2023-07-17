@@ -30,6 +30,7 @@
 #executables
 ACME_TINY="@PREFIX@/bin/acme-tiny-@PYVERSSUFFIX@"
 ACME="$ACME_TINY"
+CAT="cat"
 CHMOD="chmod"
 DEBUG="_debug"
 MKDIR="mkdir -p"
@@ -169,9 +170,9 @@ _acme_host()
 	$DEBUG $ACME --account-key "$keyfile" \
 		--csr "$BASEDIR/$hostname.csr" \
 		--acme-dir "$ACMEDIR" > "$tmpfile" &&
-	$DEBUG $MV -- "$tmpfile" "$BASEDIR/$hostname.crt"
+	$DEBUG $CAT "$tmpfile" > "$BASEDIR/$hostname.crt"
 	res=$?
-	[ $res -eq 0 ] || $RM -- "$tmpfile"
+	$DEBUG $RM -- "$tmpfile"
 	return $res
 }
 
