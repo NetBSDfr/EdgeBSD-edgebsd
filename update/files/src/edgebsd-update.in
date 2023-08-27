@@ -945,6 +945,10 @@ _update_sets()
 	#update the relevant sets
 	_info "Updating the sets..."
 	$MKDIR -- "$DESTDIR/"
+	if [ $? -ne 0 ]; then
+		_error "$DESTDIR: Could not create the destination directory"
+		return $?
+	fi
 	for set in $SETS; do
 		file="${set}${SETEXT}"
 		[ -z "${EDGEBSD_MIRROR##/*}" ] && file="$EDGEBSD_PATH/$file"
