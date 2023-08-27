@@ -925,6 +925,23 @@ _update_sets()
 	ret=0
 	reset_cursor=0
 
+	#verify the sets available if requested
+	if [ $VERIFY -ne 0 ]; then
+		_info "Verifying the sets..."
+		for set in $SETS; do
+			file="${set}${SETEXT}"
+			[ -z "${EDGEBSD_MIRROR##/*}" ] && file="$EDGEBSD_PATH/$file"
+			#missing sets are caught later
+			[ -f "$file" ] || continue
+			_info "Verifying set ${set}..."
+			#XXX TOCTOU
+			_verify "$file"
+			res=$?
+			[ $res -eq 0 ] || ret=$res
+		done
+		[ $ret -eq 0 ] || return $ret
+	fi
+
 	#update the relevant sets
 	_info "Updating the sets..."
 	$MKDIR -- "$DESTDIR/"
@@ -939,15 +956,6 @@ _update_sets()
 			_error "$set: Set file missing"
 			ret=$?
 			break
-		fi
-		if [ $VERIFY -ne 0 ]; then
-			_info "Verifying set ${set}..."
-			_verify "$file"
-			res=$?
-			if [ $res -ne 0 ]; then
-				ret=$res
-				break
-			fi
 		fi
 		if [ "$set" = "etc" ]; then
 			UPDATE_ETC=1
