@@ -921,7 +921,10 @@ _update_reboot()
 
 #update_sets
 _update_sets()
-{
+{(
+	ret=0
+	reset_cursor=0
+
 	#update the relevant sets
 	_info "Updating the sets..."
 	$MKDIR -- "$DESTDIR/"
@@ -934,13 +937,17 @@ _update_sets()
 				continue
 			fi
 			_error "$set: Set file missing"
-			return $?
+			ret=$?
+			break
 		fi
 		if [ $VERIFY -ne 0 ]; then
 			_info "Verifying set ${set}..."
 			_verify "$file"
 			res=$?
-			[ $res -eq 0 ]				|| return $res
+			if [ $res -ne 0 ]; then
+				ret=$res
+				break
+			fi
 		fi
 		if [ "$set" = "etc" ]; then
 			UPDATE_ETC=1
@@ -950,17 +957,26 @@ _update_sets()
 		_progress -f "$file" -p "$($PRINTF "%-7s " "${set}")" \
 			$TAR -xzpf - -C "$DESTDIR/"
 		res=$?
-		[ $res -eq 0 ]					|| return $res
+		reset_cursor=1
+		if [ $res -ne 0 ]; then
+			ret=$res
+			break
+		fi
 		#also extract the modules to /altroot if relevant
 		if [ "$set" = "modules" -a -d "$DESTDIR/altroot/stand" ]; then
 			_progress -f "$file" -p "$($PRINTF "%-7s " "${set}")" \
 				$TAR -xzpf - -C "$DESTDIR/altroot"
 			res=$?
-			[ $res -eq 0 ]				|| return $res
+			if [ $res -ne 0 ]; then
+				ret=$res
+				break
+			fi
 		fi
 	done
-	return 0
-}
+	#XXX ensure the cursor position is always set correctly
+	[ $reset_cursor -ne 0 ] && echo
+	return $ret
+)}
 
 
 #usage
