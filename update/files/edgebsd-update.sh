@@ -25,7 +25,14 @@ edgebsd_update_clean()
 
 edgebsd_update_fetch()
 {
-	EDGEBSD_PATH="pub/EdgeBSD/EdgeBSD-$(uname -r | cut -d '.' -f 1)/$(uname -m)/binary/sets"
+	EDGEBSD_RELEASE=$(uname -r | cut -d '.' -f 1)
+	EDGEBSD_ARCH_FULL=$(uname -m)
+	case "$EDGEBSD_ARCH_FULL" in
+		evbarm)
+			EDGEBSD_ARCH_FULL="$EDGEBSD_ARCH_FULL-$(uname -p)"
+			;;
+	esac
+	EDGEBSD_PATH="pub/EdgeBSD/EdgeBSD-$EDGEBSD_RELEASE/$EDGEBSD_ARCH_FULL/binary/sets"
 
 	mkdir -p "$edgebsd_update_cachedir/$EDGEBSD_PATH" &&
 		cd "$edgebsd_update_cachedir/$EDGEBSD_PATH" &&
