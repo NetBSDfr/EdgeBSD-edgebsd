@@ -15,6 +15,8 @@ command="@PREFIX@/sbin/$name"
 start_cmd="edgebsd_update_start"
 stop_cmd=":"
 extra_commands="clean fetch"
+edgebsd_update_flags="-v"
+
 clean_cmd="edgebsd_update_clean"
 fetch_cmd="edgebsd_update_fetch"
 
