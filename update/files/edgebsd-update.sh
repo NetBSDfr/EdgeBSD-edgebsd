@@ -47,8 +47,9 @@ edgebsd_update_fetch()
 
 edgebsd_update_start()
 {
-	[ ! -d "$edgebsd_update_cachedir" ] ||
-		$command -I -M "$edgebsd_update_cachedir" $edgebsd_update_flags
+	[ ! -d "$edgebsd_update_cachedir" ] && return 0
+	echo "Checking for pending local updates..."
+	$command -I -M "$edgebsd_update_cachedir" $edgebsd_update_flags
 }
 
 load_rc_config $name
