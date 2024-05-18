@@ -22,6 +22,8 @@ required_dirs="$edgebsd_update_cachedir"
 clean_cmd="edgebsd_update_clean"
 fetch_cmd="edgebsd_update_fetch"
 
+edgebsd_update_env="HOME=@PREFIX@/etc/EdgeBSD/edgebsd-update"
+
 edgebsd_update_clean()
 {
 	rm -fr "$edgebsd_update_cachedir/pub"
