@@ -15,7 +15,9 @@ command="@PREFIX@/sbin/$name"
 start_cmd="edgebsd_update_start"
 stop_cmd=":"
 extra_commands="clean fetch"
+edgebsd_update_cachedir="/var/cache/$name"
 edgebsd_update_flags="-v"
+required_dirs="$edgebsd_update_cachedir"
 
 clean_cmd="edgebsd_update_clean"
 fetch_cmd="edgebsd_update_fetch"
@@ -48,5 +50,4 @@ edgebsd_update_start()
 }
 
 load_rc_config $name
-edgebsd_update_cachedir=${edgebsd_update_cachedir-"/var/cache/$name"}
 run_rc_command "$1"
