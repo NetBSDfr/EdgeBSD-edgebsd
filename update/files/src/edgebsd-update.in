@@ -179,10 +179,24 @@ _edgebsd_update()
 	#update the kernel
 	clean_kernel=0
 	_update_kernel
-	ret=$?
-	if [ $ret -eq 0 ]; then
+	res=$?
+	if [ $res -eq 3 ]; then
+		#rebooting is requested
+		if [ $INIT -ne 0 ]; then
+			#remove the kernel set
+			_clean_kernel
+			#reboot after kernel update
+			_info "Rebooting after kernel update..."
+			$DEBUG $REBOOT
+			if [ $? -ne 0 ]; then
+				_error "Could not reboot after kernel update"
+				return $?
+			fi
+		fi
+	elif [ $res -eq 0 ]; then
 		[ $INIT -ne 0 -o -n "${EDGEBSD_MIRROR%%/*}" ] && clean_kernel=1
 	else
+		ret=$res
 		_error "Could not update the kernel"
 	fi
 
@@ -283,6 +297,14 @@ _arch_evbarm_update_kernel()
 	fi
 	file="kern-${EDGEBSD_KERNEL}${SETEXT}"
 	[ -z "${EDGEBSD_MIRROR##/*}" ] && file="$EDGEBSD_PATH/$file"
+	if [ ! -f "$file" ]; then
+		if [ $INIT -ne 0 ]; then
+			_info "$EDGEBSD_KERNEL: Skipping kernel update (update file missing)"
+			return 0
+		fi
+		_error "$EDGEBSD_KERNEL: Update file missing"
+		return $?
+	fi
 	if [ $VERIFY -ne 0 ]; then
 		_info "Verifying kernel ${EDGEBSD_KERNEL}..."
 		_verify "$file"
@@ -291,22 +313,24 @@ _arch_evbarm_update_kernel()
 			return $?
 		fi
 	fi
+	#extract the new kernel
+	_arch_generic_extract_kernel "${EDGEBSD_KERNEL}" "/boot" $kernelfiles
+	ret=$?
+	[ $ret -eq 0 ] || return $ret
+	#compare the kernel files
+	$DEBUG $CMP "$DESTDIR/boot/netbsd.img" "$DESTDIR/boot/$kernelimg" \
+		> "$DEVNULL"
+	if [ $? -eq 0 ]; then
+		_info "$EDGEBSD_KERNEL: Skipping kernel update (already installed)"
+		return 0
+	fi
 	#backup the current kernel
-	if [ -f "$DESTDIR/boot/$kernelimg" ]; then
-		$DEBUG $CP -- "$DESTDIR/boot/$kernelimg" \
-			"$DESTDIR/boot/o$kernelimg"
-		if [ $? -ne 0 ]; then
-			_error "$EDGEBSD_KERNEL: Could not backup the kernel"
-			return $?
-		fi
-	fi
+	_arch_generic_backup_kernel "$kernelimg" "/boot"
+	ret=$?
+	[ $ret -eq 0 ] || return $ret
+	#install the new kernel
 	_info "Installing kernel ${EDGEBSD_KERNEL}..."
-	_progress -f "$file" -p "$($PRINTF "%-7s " "$EDGEBSD_KERNEL")" \
-		$TAR -xzpf - -C "$DESTDIR/boot" $kernelfiles
-	if [ $? -ne 0 ]; then
-		_error "$EDGEBSD_KERNEL: Could not install the kernel"
-		return $?
-	fi
+	#rename the new kernel
 	_info "Renaming kernel ${EDGEBSD_KERNEL}..."
 	$DEBUG $MV -f -- "$DESTDIR/boot/netbsd.img" "$DESTDIR/boot/$kernelimg"
 	if [ $? -ne 0 ]; then
@@ -316,7 +340,40 @@ _arch_evbarm_update_kernel()
 	ret=$?
 	[ $mounted -eq 0 ] || $DEBUG $UMOUNT "$DESTDIR/boot"
 	[ $? -ne 0 ] && _error "$EDGEBSD_KERNEL: Could not unmount the boot partition"
+	#request a reboot
+	[ $ret -eq 0 ] && return 3
 	return $ret
+}
+
+_arch_generic_backup_kernel()
+{
+	kernel="$1"
+	dest="$2"
+
+	[ ! -f "$DESTDIR$dest/$kernel" ] && return 0
+	_info "Creating a kernel backup..."
+	$DEBUG $CP -- "$DESTDIR$dest/$kernel" "$DESTDIR$dest/o$kernel"
+	if [ $? -ne 0 ]; then
+		_error "$EDGEBSD_KERNEL: Could not backup the kernel"
+		return $?
+	fi
+	return 0
+}
+
+_arch_generic_extract_kernel()
+{
+	kernel="$1"
+	dest="$2"
+	shift 2
+
+	_info "Extracting kernel ${kernel}..."
+	_progress -f "$file" -p "$($PRINTF "%-7s " "$kernel")" \
+		$TAR -xzpf - -C "$DESTDIR$dest" "$@"
+	if [ $? -ne 0 ]; then
+		_error "$EDGEBSD_KERNEL: Could not extract the kernel"
+		return $?
+	fi
+	return 0
 }
 
 _arch_generic_update_bootloader()
@@ -351,7 +408,7 @@ _arch_generic_update_kernel()
 	if [ ! -f "$file" ]; then
 		if [ $INIT -ne 0 ]; then
 			_info "$EDGEBSD_KERNEL: Skipping kernel update (update file missing)"
-			return $?
+			return 0
 		fi
 		_error "$EDGEBSD_KERNEL: Update file missing"
 		return $?
@@ -372,20 +429,13 @@ _arch_generic_update_kernel()
 	if [ "${bootedfile#o}" != "$bootedfile" ]; then
 		bootedfile="${bootedfile#o}"
 	elif [ -f "$DESTDIR/altroot/$bootedfile" ]; then
-		#backup the current kernel
-		$DEBUG $CP -- "$DESTDIR/altroot/$bootedfile" \
-			"$DESTDIR/altroot/o$bootedfile"
-		if [ $? -ne 0 ]; then
-			_error "$EDGEBSD_KERNEL: Could not backup the kernel"
-			return $?
-		fi
+		_arch_generic_backup_kernel "$bootedfile" "/altroot"
+		ret=$?
+		[ $ret -eq 0 ] || return $ret
 	elif [ -f "$DESTDIR/$bootedfile" ]; then
-		#backup the current kernel
-		$DEBUG $CP -- "$DESTDIR/$bootedfile" "$DESTDIR/o$bootedfile"
-		if [ $? -ne 0 ]; then
-			_error "$EDGEBSD_KERNEL: Could not backup the kernel"
-			return $?
-		fi
+		_arch_generic_backup_kernel "$bootedfile"
+		ret=$?
+		[ $ret -eq 0 ] || return $ret
 	fi
 	#install the new kernel
 	tmpdir=$($MKTEMP -d "$MKTEMP_TEMPLATE")
@@ -423,18 +473,8 @@ _arch_generic_update_kernel()
 		return $?
 	fi
 	NOOP=0 $DEBUG $RMDIR -- "$tmpdir"
-	if [ $INIT -ne 0 ]; then
-		#remove the kernel set
-		_clean_kernel
-		#reboot after kernel update
-		_info "Rebooting after kernel update..."
-		$DEBUG $REBOOT
-		if [ $? -ne 0 ]; then
-			_error "Could not reboot after kernel update"
-			return $?
-		fi
-	fi
-	return 0
+	#request a reboot
+	return 3
 }
 
 _arch_i386_update_bootloader()
@@ -763,7 +803,7 @@ mEH+2rR/ZC0mmQ==
 #info
 _info()
 {
-	[ $VERBOSE -lt 2 ] || echo "$@"
+	[ $VERBOSE -lt 2 ] || echo "$PROGNAME: $@"
 }
 
 
@@ -803,7 +843,7 @@ _progress()
 		return 1
 	fi
 	#only use progress(1) if in interactive and verbose mode
-	if [ -n "$PS1" -a $VERBOSE -ge 1 ]; then
+	if [ \( -n "$PS1" -o $INIT -ne 0 \) -a $VERBOSE -ge 1 ]; then
 		$DEBUG $PROGRESS -p "$prefix" $options "$filename" -- "$@"
 	else
 		$DEBUG $cat -- "$filename" | "$@"
