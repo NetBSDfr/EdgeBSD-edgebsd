@@ -5,15 +5,13 @@
 
 # PROVIDE: edgebsd-update
 # REQUIRE: mountcritremote
-# BEFORE: SERVERS
+# BEFORE:  SERVERS
 
 $_rc_subr_loaded . @SYSCONFBASE@/rc.subr
 
 name="edgebsd-update"
 rcvar="edgebsd_update"
 command="@PREFIX@/sbin/$name"
-start_cmd="edgebsd_update_start"
-stop_cmd=":"
 extra_commands="clean fetch"
 edgebsd_update_cachedir="/var/cache/$name"
 edgebsd_update_flags="-v"
@@ -21,6 +19,8 @@ required_dirs="$edgebsd_update_cachedir"
 
 clean_cmd="edgebsd_update_clean"
 fetch_cmd="edgebsd_update_fetch"
+start_cmd="edgebsd_update_start"
+stop_cmd=":"
 
 edgebsd_update_env="HOME=@PREFIX@/etc/EdgeBSD/edgebsd-update"
 
