@@ -269,11 +269,17 @@ _arch_evbarm_update_bootloader()
 _arch_evbarm_update_kernel()
 {
 	ret=0
+	kernelfiles="./bcm283?-rpi-* ./netbsd.img"
+	kernelimg="kernel7.img"
+	mounted=0
 
 	#XXX assumes the Raspberry PI and DESTDIR=/
-	if ! $DEBUG $MOUNT "$DESTDIR/boot"; then
-		_error "$EDGEBSD_KERNEL: Could not mount the boot partition"
-		return $?
+	if [ ! -f "$DESTDIR/boot/$kernelimg" ]; then
+		if ! $DEBUG $MOUNT "$DESTDIR/boot"; then
+			_error "$EDGEBSD_KERNEL: Could not mount the boot partition"
+			return $?
+		fi
+		mounted=1
 	fi
 	file="kern-${EDGEBSD_KERNEL}${SETEXT}"
 	[ -z "${EDGEBSD_MIRROR##/*}" ] && file="$EDGEBSD_PATH/$file"
@@ -286,9 +292,9 @@ _arch_evbarm_update_kernel()
 		fi
 	fi
 	#backup the current kernel
-	if [ -f "$DESTDIR/boot/kernel7.img" ]; then
-		$DEBUG $CP -- "$DESTDIR/boot/kernel7.img" \
-			"$DESTDIR/boot/okernel7.img"
+	if [ -f "$DESTDIR/boot/$kernelimg" ]; then
+		$DEBUG $CP -- "$DESTDIR/boot/$kernelimg" \
+			"$DESTDIR/boot/o$kernelimg"
 		if [ $? -ne 0 ]; then
 			_error "$EDGEBSD_KERNEL: Could not backup the kernel"
 			return $?
@@ -296,19 +302,19 @@ _arch_evbarm_update_kernel()
 	fi
 	_info "Installing kernel ${EDGEBSD_KERNEL}..."
 	_progress -f "$file" -p "$($PRINTF "%-7s " "$EDGEBSD_KERNEL")" \
-		$TAR -xzpf - -C "$DESTDIR/boot"
+		$TAR -xzpf - -C "$DESTDIR/boot" $kernelfiles
 	if [ $? -ne 0 ]; then
 		_error "$EDGEBSD_KERNEL: Could not install the kernel"
 		return $?
 	fi
 	_info "Renaming kernel ${EDGEBSD_KERNEL}..."
-	$DEBUG $MV -f -- "$DESTDIR/boot/netbsd.bin" "$DESTDIR/boot/kernel7.img"
+	$DEBUG $MV -f -- "$DESTDIR/boot/netbsd.img" "$DESTDIR/boot/$kernelimg"
 	if [ $? -ne 0 ]; then
 		_error "$EDGEBSD_KERNEL: Could not rename the kernel"
 		return $?
 	fi
 	ret=$?
-	$DEBUG $UMOUNT "$DESTDIR/boot"
+	[ $mounted -eq 0 ] || $DEBUG $UMOUNT "$DESTDIR/boot"
 	[ $? -ne 0 ] && _error "$EDGEBSD_KERNEL: Could not unmount the boot partition"
 	return $ret
 }
