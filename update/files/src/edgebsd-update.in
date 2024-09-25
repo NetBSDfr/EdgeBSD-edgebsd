@@ -179,8 +179,8 @@ _edgebsd_update()
 	#update the kernel
 	clean_kernel=0
 	_update_kernel
-	res=$?
-	if [ $res -eq 3 ]; then
+	ret=$?
+	if [ $ret -eq 3 ]; then
 		#rebooting is requested
 		if [ $INIT -ne 0 ]; then
 			#remove the kernel set
@@ -193,10 +193,9 @@ _edgebsd_update()
 				return $?
 			fi
 		fi
-	elif [ $res -eq 0 ]; then
+	elif [ $ret -eq 0 ]; then
 		[ $INIT -ne 0 -o -n "${EDGEBSD_MIRROR%%/*}" ] && clean_kernel=1
 	else
-		ret=$res
 		_error "Could not update the kernel"
 	fi
 
