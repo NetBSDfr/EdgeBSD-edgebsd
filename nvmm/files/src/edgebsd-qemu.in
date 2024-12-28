@@ -275,8 +275,8 @@ _qemu_run()
 	#determine QEMU parameters
 	[ -n "$QEMU_NAME" ] && QEMU="$QEMU -name $QEMU_NAME"
 	[ -n "$QEMU_MACHINE" ] && QEMU="$QEMU -machine $QEMU_MACHINE"
-	[ -n "$QEMU_USER" ] && QEMU="$QEMU -runas $QEMU_USER"
-	[ -n "$QEMU_CHROOT" ] && QEMU="$QEMU -chroot $QEMU_CHROOT"
+	[ -n "$QEMU_USER" ] && QEMU="$QEMU -run-with user=$QEMU_USER"
+	[ -n "$QEMU_CHROOT" ] && QEMU="$QEMU -run-with chroot=$QEMU_CHROOT"
 	[ $QEMU_CPUS -gt 1 ] && QEMU="$QEMU -smp $QEMU_CPUS"
 	[ -n "$QEMU_MEMORY" ] && QEMU="$QEMU -m $QEMU_MEMORY"
 	[ -n "$QEMU_EVENT_PANIC" -a "$QEMU_EVENT_PANIC" != "poweroff" ] &&
