@@ -46,7 +46,8 @@ DRYRUN=0
 PROGNAME="nvmm-xl"
 RUNAS=
 RUNDIR="/var/run/nvmm"
-SCREENDIR="/tmp/screens"
+SCREENDIR="/$HOME/.screen"
+SCREENDIR2="/tmp/screens/S-$USER"
 SYSCONFDIR="@SYSCONFDIR@"
 USER="$(id -un)"
 VERBOSE=1
@@ -227,9 +228,10 @@ _nvmm_xl_console()
 	domain="$1"
 	session="_nvmm-$domain"
 
-	for s in "$SCREENDIR/S-$USER/"*"._nvmm-"*; do
+	for s in "$SCREENDIR/"*"._nvmm-"* "$SCREENDIR2/"*"._nvmm-"*; do
 		[ -S "$s" ] || continue
-		if [ "${s#$SCREENDIR/S-$USER/*.}" = "$session" ]; then
+		if [ "${s#$SCREENDIR/*.}" = "$session" \
+				-o "${s#$SCREENDIR2/*.}" = "$session" ]; then
 			$DEBUG $SCREEN -x "$session"
 			return $?
 		fi
@@ -386,7 +388,7 @@ _nvmm_xl_list()
 	#XXX output more information about each domain
 	echo "Name"
 	echo "NVMM"
-	for domain in "$SCREENDIR/S-$USER/"*"._nvmm-"*; do
+	for domain in "$SCREENDIR/"*"._nvmm-"* "$SCREENDIR2/"*"._nvmm-"*; do
 		[ -S "$domain" ] || continue
 		echo "${domain##*._nvmm-}"
 	done
