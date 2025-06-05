@@ -2,7 +2,7 @@
 
 PKGNAME=	edgebsd-nvmm-${VERSION}
 VERSION=	10
-PKGREVISION=	2
+PKGREVISION=	3
 CATEGORIES=	edgebsd
 
 MAINTAINER=	khorben@edgebsd.org
