@@ -2,7 +2,7 @@
 
 PKGNAME=	edgebsd-nvmm-${VERSION}
 VERSION=	10
-PKGREVISION=	3
+PKGREVISION=	4
 CATEGORIES=	edgebsd
 
 MAINTAINER=	khorben@edgebsd.org
@@ -23,6 +23,9 @@ TEST_TARGET=	tests
 
 DEPENDS+=	qemu-[0-9]*:../../emulators/qemu
 DEPENDS+=	screen-[0-9]*:../../misc/screen
+
+TOOL_DEPENDS+=	libxslt-[0-9]*:../../textproc/libxslt
+TOOL_DEPENDS+=	docbook-xsl-[0-9]*:../../textproc/docbook-xsl
 
 EGDIR=			share/examples/edgebsd-nvmm
 CONF_FILES=		${EGDIR}/template.netbsd.amd64 \
