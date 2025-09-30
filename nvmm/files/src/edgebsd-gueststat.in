@@ -385,6 +385,16 @@ _gueststat_defaults()
 	[ -n "$EDGEBSD_MIRROR" ] || EDGEBSD_MIRROR="/home/ftp/pub/EdgeBSD/EdgeBSD-$release"
 
 	case "$release/$ARCH" in
+		10/amd64)
+			[ -n "$KERNELS" ] || KERNELS="GENERIC
+XEN3_DOM0	xen"
+			[ -n "$SETEXT" ] || SETEXT=".tar.xz"
+			;;
+		10/i386)
+			[ -n "$KERNELS" ] || KERNELS="GENERIC
+XEN3_DOM0	xen"
+			[ -n "$SETEXT" ] || SETEXT=".tar.xz"
+			;;
 		9/amd64)
 			[ -n "$KERNELS" ] || KERNELS="GENERIC
 GENERIC_KASLR	kaslr
