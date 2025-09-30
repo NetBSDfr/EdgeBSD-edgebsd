@@ -374,7 +374,7 @@ _gueststat_defaults()
 		6|7|8)
 			[ -n "$SETS" ] || SETS="base etc games man misc modules text"
 			;;
-		9)
+		9|10)
 			[ -n "$SETS" ] || SETS="base etc games man misc modules rescue text"
 			;;
 		*)
@@ -1052,7 +1052,7 @@ _usage()
 	echo "  -f	Overwrite the image if existing" 1>&2
 	echo "  -k	Set the kernels" 1>&2
 	echo "  -o	Set the output filename" 1>&2
-	echo "  -r	Set the target EdgeBSD release (6, 7, 8, or 9)" 1>&2
+	echo "  -r	Set the target EdgeBSD release (6, to 10)" 1>&2
 	echo "  -s	Set the size of the target image (default: 20 GB)" 1>&2
 	echo 1>&2
 	echo "  update [-cS][-a arch][-H hypervisor][-o filename][-r release] hostname" 1>&2
@@ -1061,7 +1061,7 @@ _usage()
 	echo "  -S	Start the image (sets Xen mode)" 1>&2
 	echo "  -c	Start the image and enable the console (sets Xen mode)" 1>&2
 	echo "  -o	Set the output filename" 1>&2
-	echo "  -r	Set the target EdgeBSD release (6, 7, 8, or 9)" 1>&2
+	echo "  -r	Set the target EdgeBSD release (6 to 10)" 1>&2
 	return 1
 }
 
