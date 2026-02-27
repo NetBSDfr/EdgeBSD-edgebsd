@@ -53,6 +53,7 @@ BINDIR="@BINDIR@"
 DEVNULL="/dev/null"
 DRYRUN=0
 PROGNAME="edgebsd-qemu"
+QEMU_APPEND=
 QEMU_ARGS=
 QEMU_CHROOT=
 QEMU_CPUS=1
@@ -60,6 +61,8 @@ QEMU_DEFAULT_ARGS=
 QEMU_EVENT_PANIC=
 QEMU_EVENT_REBOOT=
 QEMU_EVENT_SHUTDOWN=
+QEMU_INITRD=
+QEMU_KERNEL=
 QEMU_MACHINE="q35,accel=nvmm"
 QEMU_MEMORY=
 QEMU_NAME=
@@ -279,6 +282,9 @@ _qemu_run()
 	[ -n "$QEMU_CHROOT" ] && QEMU="$QEMU -run-with chroot=$QEMU_CHROOT"
 	[ $QEMU_CPUS -gt 1 ] && QEMU="$QEMU -smp $QEMU_CPUS"
 	[ -n "$QEMU_MEMORY" ] && QEMU="$QEMU -m $QEMU_MEMORY"
+	[ -n "$QEMU_KERNEL" ] && QEMU="$QEMU -kernel $QEMU_KERNEL"
+	[ -n "$QEMU_INITRD" ] && QEMU="$QEMU -initrd $QEMU_INITRD"
+	[ -n "$QEMU_APPEND" ] && QEMU="$QEMU -append $QEMU_APPEND"
 	[ -n "$QEMU_EVENT_PANIC" -a "$QEMU_EVENT_PANIC" != "poweroff" ] &&
 		QEMU="$QEMU -action panic=$QEMU_EVENT_PANIC"
 	[ -n "$QEMU_EVENT_REBOOT" -a "$QEMU_EVENT_REBOOT" != "reboot" ] &&
@@ -316,6 +322,9 @@ _qemu_set()
 			arch)
 				[ -z "$QEMU_ARCH" ] && QEMU_ARCH="$value"
 				;;
+			append)
+				QEMU_APPEND="$value"
+				;;
 			args)
 				QEMU_ARGS="$QEMU_ARGS $value"
 				;;
@@ -324,6 +333,12 @@ _qemu_set()
 				;;
 			cpus)
 				QEMU_CPUS="$value"
+				;;
+			initrd)
+				QEMU_INITRD="$value"
+				;;
+			kernel)
+				QEMU_KERNEL="$value"
 				;;
 			machine)
 				QEMU_MACHINE="$value"
