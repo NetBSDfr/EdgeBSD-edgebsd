@@ -1,8 +1,7 @@
 # $NetBSD$
 
 PKGNAME=	edgebsd-nvmm-${VERSION}
-VERSION=	10
-PKGREVISION=	6
+VERSION=	11
 CATEGORIES=	edgebsd
 
 MAINTAINER=	khorben@edgebsd.org
